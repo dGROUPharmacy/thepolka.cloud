@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block title %}Welcome | ThePolka.Cloud{% endblock %}
+
+{% block content %}
+<section class="hero" id="welcome">
+  <h1>Welcome to ThePolka.Cloud</h1>
+  <p>
+    Browse software builds, educational material, cloud services, and
+    professional tools created across the ThePolka.Cloud ecosystem.
+  </p>
+  <p class="flagship-link">
+    Current flagship project:
+    <a href="https://resume-generator.thepolka.cloud/#resume">Résumé Generator</a>
+  </p>
+  <div class="hero-image">
+    <img
+      src="{{ url_for('static', filename='img/thepolka.cloud.png') }}"
+      alt="ThePolka.Cloud"
+      class="hero-graphic"
+      loading="eager"
+    >
+  </div>
+</section>
+{% endblock %}

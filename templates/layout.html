@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="ThePolka.Cloud software, education, cloud services, and professional tools.">
+  <title>{% block title %}ThePolka.Cloud{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/thepolka.cloud.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <a href="https://thepolka.cloud/#welcome">ThePolka.Cloud™</a>
+      </div>
+
+      <div class="hero-ticker" aria-label="Welcome in several languages">
+        <div class="ticker-track">
+          <span class="ticker-item" lang="en">Hello</span>
+          <span class="ticker-item" lang="es">Hola</span>
+          <span class="ticker-item" lang="ar" dir="rtl">مرحباً</span>
+          <span class="ticker-item" lang="zh">你好</span>
+          <span class="ticker-item" lang="fr">Bonjour</span>
+          <span class="ticker-item" lang="en" aria-hidden="true">Hello</span>
+          <span class="ticker-item" lang="es" aria-hidden="true">Hola</span>
+          <span class="ticker-item" lang="ar" dir="rtl" aria-hidden="true">مرحباً</span>
+          <span class="ticker-item" lang="zh" aria-hidden="true">你好</span>
+          <span class="ticker-item" lang="fr" aria-hidden="true">Bonjour</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Global navigation">
+        <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
+        <a href="https://mail-ecosystem.thepolka.cloud/#mymail" class="nav-link">Mail</a>
+        <a href="https://resume-generator.thepolka.cloud/#resume" class="nav-link">Résumé Generator</a>
+        <a href="https://faire.thepolka.cloud/#ai" class="nav-link">FAIRE OS</a>
+        <a href="https://cad.thepolka.cloud/#ack" class="nav-link">CAD Experience</a>
+        <a href="https://directory.thepolka.cloud/#filing" class="nav-link">Navigate</a>
+        <a href="https://store.thepolka.cloud/#support" class="nav-link">Boutique</a>
+      </nav>
+
+      <img src="{{ url_for('static', filename='img/thepolka.cloud.png') }}" alt="ThePolka.Cloud" loading="lazy">
+    </aside>
+
+    <div class="main-column">
+      <main class="page-content">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-contact">
+          <a href="mailto:info@thepolka.cloud">info@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="mailto:support@thepolka.cloud">support@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="mailto:sales@thepolka.cloud">sales@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="https://privacy.thepolka.cloud/#Shh">Privacy</a>
+        </div>
+        <div class="footer-legal">
+          ThePolka.Cloud™ — Patent pending. Trademark applications filed and in process.
+          Copyright © 2019–2026. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

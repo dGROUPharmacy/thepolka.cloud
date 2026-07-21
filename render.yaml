@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: thepolka-cloud
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 2 --timeout 120 --access-logfile - --error-logfile - app:app
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: DATA_DIR
+        value: /var/data
+      - key: SECRET_KEY
+        generateValue: true
+    disk:
+      name: thepolka-data
+      mountPath: /var/data
+      sizeGB: 1

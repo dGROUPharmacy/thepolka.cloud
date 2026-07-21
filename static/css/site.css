@@ -1,0 +1,281 @@
+/* ============================================================
+   ThePolka.Cloud — site.css
+   Shared by: thepolka.cloud (port 8001) and all subdomains
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f8f6ef;
+  --surface:   #ffffff;
+  --border:    #e0dbd0;
+  --text:      #1a1a1a;
+  --muted:     #6b6555;
+  --accent:    #3f7068;
+  --sidebar-w: 240px;
+  --font:      -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ── Layout shell ─────────────────────────────── */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ──────────────────────────────────── */
+.sidebar {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  min-height: 100vh;
+  border-right: 2px solid var(--text);
+  background: var(--bg);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.hero-ticker {
+    width: 100%;
+    height: 48px;
+    margin-bottom: 24px;
+    border-radius: 12px;
+    background: #7d32af;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.ticker-track {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 40px;
+    height: 100%;
+    width: max-content;
+    margin: 0;
+    list-style: none;
+    padding-left: 100%;
+    animation: ticker-scroll 14s linear infinite;
+}
+
+.ticker-item {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
+.hero-ticker:hover .ticker-track {
+  animation-play-state: play;
+}
+
+.sidebar-brand a {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  display: block;
+  line-height: 1.3;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.95rem;
+  border-radius: 5px;
+  transition: background 0.1s;
+}
+
+.nav-link:hover { background: var(--border); }
+.nav-link.active {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+/* ── Main column ──────────────────────────────── */
+.main-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1;
+  padding: 3rem 2.5rem;
+}
+
+/* ── Footer ──────k─────────────────────────────── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 2.5rem;
+  background: var(--bg);
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.footer-contact {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.contact-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.contact-subs {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.4rem;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.contact-subs a {
+  padding: 2px 0;
+}
+
+.footer-contact a { color: var(--muted); text-decoration: none; }
+.footer-contact a:hover { text-decoration: underline; }
+.footer-contact .sep { margin: 0 0.4rem; }
+.footer-legal { font-size: 0.75rem; color: #999; margin-top: 0.25rem; }
+
+/* ── Hero / home ──────────────────────────────── */
+.hero { max-width: 680px; }
+.hero h1 { font-size: 2.2rem; margin-bottom: 1rem; }
+.hero p  { font-size: 1.05rem; color: var(--muted); margin-bottom: 0.75rem; line-height: 1.6; }
+.flagship-link a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.flagship-link a:hover { text-decoration: underline; }
+
+/* ── Resume tool ──────────────────────────────── */
+.resume-tool { max-width: 760px; }
+.resume-tool h1 { font-size: 1.8rem; margin-bottom: 0.4rem; }
+.subhead { font-size: 0.95rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; }
+
+.rg-section {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fffdf8;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+.rg-section-header {
+  width: 100%; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px;
+  padding: 14px 18px; background: none; border: none;
+  cursor: pointer; font-size: 1rem; font-weight: 600;
+  text-align: left; color: inherit;
+}
+.rg-section-header:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rg-chevron { color: var(--muted); transition: transform 0.15s; font-size: 0.9rem; }
+.rg-section.collapsed .rg-chevron  { transform: rotate(180deg); }
+.rg-section.collapsed .rg-section-body { display: none; }
+.rg-section-body { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.rg-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; color: var(--muted); }
+.rg-field input, .rg-field textarea {
+  font: inherit; font-size: 0.95rem; color: var(--text);
+  padding: 9px 11px; border: 1px solid var(--border);
+  border-radius: 6px; background: #fffefb; resize: vertical;
+}
+.rg-field textarea { min-height: 64px; }
+.rg-field input:focus-visible, .rg-field textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+.rg-hint { font-size: 0.88rem; color: var(--muted); margin: 0; }
+
+.rg-entry-list { display: flex; flex-direction: column; gap: 12px; }
+.rg-entry {
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; background: #fbf8f0;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.rg-entry-top { display: flex; align-items: flex-start; gap: 8px; }
+.rg-entry-top input { flex: 1; }
+.rg-remove-entry {
+  border: none; background: none; color: var(--muted);
+  font-size: 1.1rem; line-height: 1; cursor: pointer;
+  padding: 4px 6px; border-radius: 4px;
+}
+.rg-remove-entry:hover { color: #b3493f; background: #f3e9e5; }
+.rg-entry-field label {
+  display: block; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.07em; color: var(--muted);
+  margin-bottom: 5px; text-transform: uppercase;
+}
+.rg-entry-field input, .rg-entry-field textarea {
+  width: 100%; font: inherit; font-size: 0.9rem; color: var(--text);
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 6px; background: #fffefb; resize: vertical;
+}
+.rg-entry-field textarea { min-height: 56px; }
+
+.rg-add-entry {
+  align-self: flex-start; border: 1px dashed var(--border);
+  background: none; color: var(--accent); font-weight: 600;
+  font-size: 0.9rem; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+}
+.rg-add-entry:hover { background: #eef4f2; }
+
+.rg-status { min-height: 1.2em; margin: 14px 0 0; font-size: 0.9rem; }
+.rg-status[data-state="error"] { color: #b3493f; }
+.rg-status[data-state="ok"]    { color: var(--accent); }
+
+.cta-button {
+  margin-top: 1.25rem; padding: 12px 24px;
+  background: var(--text); color: var(--bg);
+  border: none; border-radius: 8px; font-size: 1rem;
+  font-weight: 600; cursor: pointer; display: inline-block;
+}
+.cta-button:hover { background: #333; }
+.cta-button[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Mobile ───────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-container { flex-direction: column; }
+  .sidebar {
+    width: 100%; min-height: unset; height: auto;
+    position: static; border-right: none;
+    border-bottom: 2px solid var(--text);
+    padding: 1.25rem 1.5rem;
+  }
+  .sidebar-nav { flex-direction: row; flex-wrap: wrap; gap: 0.4rem; }
+  .page-content { padding: 1.5rem 1.25rem; }
+  .site-footer { padding: 1rem 1.25rem; }
+}
