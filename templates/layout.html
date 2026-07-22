@@ -35,6 +35,7 @@
         <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
         <a href="{{ url_for('ecosystem_page', page='mail') }}" class="nav-link{% if active == 'mail' %} active{% endif %}">Mail</a>
         <a href="{{ url_for('ecosystem_page', page='resume') }}" class="nav-link{% if active == 'resume' %} active{% endif %}">Résumé Generator</a>
+        <a href="{{ url_for('forecast_page') }}" class="nav-link{% if active == 'forecast' %} active{% endif %}">Forecast</a>
         <a href="{{ url_for('ecosystem_page', page='faire') }}" class="nav-link{% if active == 'faire' %} active{% endif %}">FAIRE OS</a>
         <a href="{{ url_for('ecosystem_page', page='cad') }}" class="nav-link{% if active == 'cad' %} active{% endif %}">CAD Experience</a>
         <a href="{{ url_for('ecosystem_page', page='directory') }}" class="nav-link{% if active == 'directory' %} active{% endif %}">Navigate</a>

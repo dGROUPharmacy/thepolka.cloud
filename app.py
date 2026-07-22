@@ -4,6 +4,8 @@ import os
 import sqlite3
 import io
 import zipfile
+import json
+from urllib.request import Request, urlopen
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -77,6 +79,13 @@ def audit_connection():
     connection.execute(
         "CREATE TABLE IF NOT EXISTS audit_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, checked_at TEXT NOT NULL, status TEXT NOT NULL)"
     )
+    return connection
+
+
+def advertising_connection():
+    connection = sqlite3.connect(DATA_DIR / "advertising.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute("CREATE TABLE IF NOT EXISTS weather_ad_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT NOT NULL, created_at TEXT NOT NULL)")
     return connection
 
 
@@ -284,6 +293,53 @@ def ai_warehouse():
 @app.get("/health")
 def health():
     return jsonify(status="ok", service="thepolka.cloud"), 200
+
+
+@app.get("/forecast")
+def forecast_page():
+    return render_template("forecast.html", active="forecast")
+
+
+def nws_json(url):
+    headers = {"User-Agent": "ThePolka.Cloud Forecast (info@thepolka.cloud)", "Accept": "application/geo+json, application/json"}
+    with urlopen(Request(url, headers=headers), timeout=20) as response:
+        return json.load(response)
+
+
+@app.get("/api/forecast")
+def forecast_api():
+    try:
+        forecast = nws_json("https://api.weather.gov/gridpoints/MKX/82,72/forecast")
+        period = forecast["properties"]["periods"][0]
+        products = nws_json("https://api.weather.gov/products/types/AFD/locations/MKX")
+        graph = products.get("@graph", [])
+        discussion, discussion_issued = "No forecast discussion is currently available.", None
+        if graph:
+            latest = nws_json(graph[0]["@id"])
+            discussion = latest.get("productText", discussion)
+            discussion_issued = latest.get("issuanceTime")
+        return jsonify(period=period, discussion=discussion, discussion_issued=discussion_issued)
+    except Exception as exc:
+        app.logger.exception("Weather data request failed")
+        return jsonify(error="Weather data is temporarily unavailable.", detail=str(exc)), 502
+
+
+@app.post("/api/forecast/ad-event")
+def forecast_ad_event():
+    event = str((request.get_json(silent=True) or {}).get("event", ""))
+    if event not in {"impression", "click"}:
+        return jsonify(error="Invalid event"), 400
+    with advertising_connection() as connection:
+        connection.execute("INSERT INTO weather_ad_events (event, created_at) VALUES (?, ?)", (event, datetime.now(timezone.utc).isoformat()))
+    return jsonify(status="recorded", event=event)
+
+
+@app.get("/api/forecast/ad-metrics")
+def forecast_ad_metrics():
+    with advertising_connection() as connection:
+        counts = {row["event"]: row["count"] for row in connection.execute("SELECT event, COUNT(*) AS count FROM weather_ad_events GROUP BY event")}
+    impressions, clicks = counts.get("impression", 0), counts.get("click", 0)
+    return jsonify(impressions=impressions, clicks=clicks, click_through_rate=(clicks / impressions if impressions else 0))
 
 
 @app.after_request

@@ -1,0 +1,14 @@
+{% extends "layout.html" %}
+{% block title %}Forecast Center | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/forecast.css') }}">{% endblock %}
+{% block content %}
+<section class="forecast-page">
+  <header class="forecast-header"><p class="eyebrow">Electronicloud weather on ThePolka.Cloud</p><h1>Forecast Center</h1><p>A simple forecast dashboard with GOES-East imagery and Milwaukee/Sullivan National Weather Service data.</p><p id="forecast-issued">Loading current weather…</p></header>
+  <a class="weather-ad" id="weather-ad" href="mailto:sales@thepolka.cloud?subject=Forecast%20page%20advertising"><span>✦</span><strong>YOUR ADVERTISEMENT HERE</strong><small>Reach Forecast Center visitors</small></a>
+  <article class="forecast-card"><h2>GOES-East Satellite</h2><img id="goes-image" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/1250x750.jpg" alt="Latest GOES-19 GeoColor satellite view"></article>
+  <article class="forecast-card"><div class="card-heading"><h2>Forecast</h2><button type="button" id="read-forecast">▶ Read forecast aloud</button></div><div id="forecast-summary">Loading forecast…</div></article>
+  <article class="forecast-card"><div class="card-heading"><h2>Weather Discussion</h2><button type="button" id="read-discussion">▶ Read discussion aloud</button></div><pre id="forecast-discussion">Loading the latest Area Forecast Discussion…</pre></article>
+  <p class="forecast-source">Data: NOAA/National Weather Service. Satellite: NOAA/NESDIS/STAR. Consult weather.gov for official warnings.</p>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/forecast.js') }}" defer></script>{% endblock %}
