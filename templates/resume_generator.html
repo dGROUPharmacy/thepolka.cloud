@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Resume Machine — thepolka.cloud</title>
+{% extends "layout.html" %}
+{% set active = "resume" %}
+{% block title %}Resume Machine — ThePolka.Cloud{% endblock %}
+{% block extra_css %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
   <style>
     /* ── Reset & Base ── */
@@ -51,22 +49,6 @@
       font-size: 15px;
       line-height: 1.6;
     }
-
-    .polka-global-nav {
-      position: sticky; top: 0; z-index: 1000;
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 16px; overflow-x: auto;
-      background: color-mix(in srgb, var(--surface) 94%, transparent);
-      border-bottom: 0.5px solid var(--border-md);
-      backdrop-filter: blur(12px);
-    }
-    .polka-global-nav a {
-      color: var(--text); text-decoration: none; white-space: nowrap;
-      font-size: 13px; padding: 6px 9px; border-radius: var(--radius);
-    }
-    .polka-global-nav a:hover { background: var(--bg); }
-    .polka-global-nav .brand { font-weight: 700; margin-right: 4px; }
-    .polka-global-nav .current { background: var(--blue-bg); color: var(--blue-text); }
 
     /* ── Layout ── */
     .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
@@ -219,20 +201,8 @@
     /* ── Section hint text ── */
     .hint { font-size: 13px; color: var(--hint); margin-top: 10px; }
   </style>
-</head>
-<body>
-<nav class="polka-global-nav" aria-label="Global navigation">
-  <a class="brand" href="/#welcome">ThePolka.Cloud™</a>
-  <a href="/">Home</a>
-  <a href="/ecosystem/mail">Mail</a>
-  <a class="current" href="/ecosystem/resume" aria-current="page">Résumé Generator</a>
-  <a href="/ecosystem/faire">FAIRE OS</a>
-  <a href="/ecosystem/cad">CAD Experience</a>
-  <a href="/ecosystem/directory">Navigate</a>
-  <a href="/agent">Agent</a>
-  <a href="/ai-marketplace">AI Reviews</a>
-  <a href="/ai-warehouse">AI Content Warehouse</a>
-</nav>
+{% endblock %}
+{% block content %}
 <div class="wrap">
   <div class="page-header">
     <div class="pill">Resume Machine</div>
@@ -509,5 +479,4 @@ async function generate() {
   }
 }
 </script>
-</body>
-</html>
+{% endblock %}

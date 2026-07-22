@@ -131,7 +131,16 @@ def ecosystem_page(page):
     if page == "mail":
         return render_template("mail.html", active="mail")
     if page == "cad":
-        return render_template("cad.html")
+        model_path = BASE_DIR / "static" / "model" / "stand.glb"
+        cad_error = None
+        if not model_path.exists():
+            try:
+                from static.scripts.generate_stand import main as generate_stand
+                generate_stand()
+            except Exception as exc:
+                app.logger.exception("CAD asset generation failed")
+                cad_error = str(exc)
+        return render_template("cad.html", cad_error=cad_error)
     if page == "faire":
         return render_template("faire.html", active="faire")
     if page == "directory":
