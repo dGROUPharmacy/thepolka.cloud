@@ -3,7 +3,7 @@ services:
     name: thepolka-cloud
     runtime: python
     plan: starter
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python static/scripts/generate_stand.py
     startCommand: gunicorn --workers 2 --timeout 120 --access-logfile - --error-logfile - app:app
     healthCheckPath: /health
     autoDeployTrigger: commit

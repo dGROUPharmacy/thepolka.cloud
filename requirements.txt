@@ -5,3 +5,7 @@ MarkupSafe==3.0.3
 gunicorn==23.0.0
 reportlab==4.4.3
 python-docx==1.2.0
+numpy==2.3.1
+shapely==2.1.1
+trimesh==4.7.1
+mapbox-earcut==1.0.3
