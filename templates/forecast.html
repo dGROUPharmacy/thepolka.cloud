@@ -3,7 +3,7 @@
 {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/forecast.css') }}">{% endblock %}
 {% block content %}
 <section class="forecast-page">
-  <header class="forecast-header"><p class="eyebrow">Electronicloud weather on ThePolka.Cloud</p><h1>Forecast Center</h1><p>A simple forecast dashboard with GOES-East imagery and Milwaukee/Sullivan National Weather Service data.</p><p id="forecast-issued">Loading current weather…</p></header>
+  <header class="forecast-header"><p class="eyebrow">Electronicloud weather on ThePolka.Cloud</p><h1>Forecast Center</h1><p>A simple forecast dashboard with GOES-East imagery, local National Weather Service data, and a fresh daily community discussion.</p><p id="forecast-issued">Loading current weather…</p></header>
   <section class="weather-ad" id="weather-ad">
     <button type="button" id="open-location-search" class="ad-face"><span>✦</span><strong>YOUR ADVERTISEMENT HERE</strong><small>Click for your local weather</small></button>
     <form id="location-form" class="location-search" hidden><label for="location-query">Search your local forecast</label><div><input id="location-query" placeholder="City, state, ZIP code, or place" autocomplete="postal-code" required><button type="submit">Search</button></div><span id="location-status" role="status"></span></form>
