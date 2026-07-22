@@ -4,11 +4,14 @@
 {% block content %}
 <section class="forecast-page">
   <header class="forecast-header"><p class="eyebrow">Electronicloud weather on ThePolka.Cloud</p><h1>Forecast Center</h1><p>A simple forecast dashboard with GOES-East imagery and Milwaukee/Sullivan National Weather Service data.</p><p id="forecast-issued">Loading current weather…</p></header>
-  <a class="weather-ad" id="weather-ad" href="mailto:sales@thepolka.cloud?subject=Forecast%20page%20advertising"><span>✦</span><strong>YOUR ADVERTISEMENT HERE</strong><small>Reach Forecast Center visitors</small></a>
+  <section class="weather-ad" id="weather-ad">
+    <button type="button" id="open-location-search" class="ad-face"><span>✦</span><strong>YOUR ADVERTISEMENT HERE</strong><small>Click for your local weather</small></button>
+    <form id="location-form" class="location-search" hidden><label for="location-query">Search your local forecast</label><div><input id="location-query" placeholder="City, state, ZIP code, or place" autocomplete="postal-code" required><button type="submit">Search</button></div><span id="location-status" role="status"></span></form>
+  </section>
   <article class="forecast-card"><h2>GOES-East Satellite</h2><img id="goes-image" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/1250x750.jpg" alt="Latest GOES-19 GeoColor satellite view"></article>
   <article class="forecast-card"><div class="card-heading"><h2>Forecast</h2><button type="button" id="read-forecast">▶ Read forecast aloud</button></div><div id="forecast-summary">Loading forecast…</div></article>
   <article class="forecast-card discussion-card">
-    <div class="card-heading"><div><h2>Today’s Forecast Discussion</h2><p id="discussion-day">A fresh public conversation begins every day.</p></div><button type="button" id="read-discussion">▶ Read comments aloud</button></div>
+    <div class="card-heading"><div><h2>Today’s National Forecast Discussion</h2><p id="discussion-day">A fresh public conversation begins every day.</p></div><button type="button" id="read-discussion">▶ Read comments aloud</button></div>
     <div id="forecast-discussion" class="comment-feed" aria-live="polite"><p>Loading today’s comments…</p></div>
     <form id="comment-form" class="comment-form">
       <label>Display name<input id="comment-name" maxlength="40" required></label>
@@ -18,6 +21,7 @@
     </form>
     <p class="forecast-source">Public comments are user-submitted. Do not use them for emergency or life-safety decisions.</p>
   </article>
+  <article class="forecast-card moon-card"><div class="card-heading"><div><h2>Live Moon & Lunar Calendar</h2><p id="moon-today">Calculating today’s lunar phase…</p></div><div id="moon-symbol" class="moon-symbol" aria-hidden="true">◯</div></div><div id="moon-calendar" class="moon-calendar"></div></article>
   <p class="forecast-source">Data: NOAA/National Weather Service. Satellite: NOAA/NESDIS/STAR. Consult weather.gov for official warnings.</p>
 </section>
 {% endblock %}

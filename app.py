@@ -5,6 +5,7 @@ import sqlite3
 import io
 import zipfile
 import json
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
 from pathlib import Path
@@ -333,6 +334,25 @@ def forecast_api():
     except Exception as exc:
         app.logger.exception("Weather data request failed")
         return jsonify(error="Weather data is temporarily unavailable.", detail=str(exc)), 502
+
+
+@app.get("/api/forecast/search")
+def forecast_search_api():
+    query = " ".join(request.args.get("q", "").strip().split())[:100]
+    if len(query) < 2:
+        return jsonify(error="Enter a city, state, ZIP code, or place name."), 400
+    try:
+        geocode_url = "https://nominatim.openstreetmap.org/search?" + urlencode({"q": query, "format": "jsonv2", "limit": 1, "countrycodes": "us"})
+        locations = nws_json(geocode_url)
+        if not locations:
+            return jsonify(error="Location not found. Try a city and state or ZIP code."), 404
+        latitude, longitude = float(locations[0]["lat"]), float(locations[0]["lon"])
+        point = nws_json(f"https://api.weather.gov/points/{latitude:.4f},{longitude:.4f}")
+        forecast = nws_json(point["properties"]["forecast"])
+        return jsonify(location=locations[0]["display_name"], latitude=latitude, longitude=longitude, period=forecast["properties"]["periods"][0])
+    except Exception as exc:
+        app.logger.exception("Local forecast search failed")
+        return jsonify(error="Local forecast search is temporarily unavailable.", detail=str(exc)), 502
 
 
 @app.route("/api/forecast/discussion", methods=["GET", "POST"])
