@@ -7,7 +7,17 @@
   <a class="weather-ad" id="weather-ad" href="mailto:sales@thepolka.cloud?subject=Forecast%20page%20advertising"><span>✦</span><strong>YOUR ADVERTISEMENT HERE</strong><small>Reach Forecast Center visitors</small></a>
   <article class="forecast-card"><h2>GOES-East Satellite</h2><img id="goes-image" src="https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/1250x750.jpg" alt="Latest GOES-19 GeoColor satellite view"></article>
   <article class="forecast-card"><div class="card-heading"><h2>Forecast</h2><button type="button" id="read-forecast">▶ Read forecast aloud</button></div><div id="forecast-summary">Loading forecast…</div></article>
-  <article class="forecast-card"><div class="card-heading"><h2>Weather Discussion</h2><button type="button" id="read-discussion">▶ Read discussion aloud</button></div><pre id="forecast-discussion">Loading the latest Area Forecast Discussion…</pre></article>
+  <article class="forecast-card discussion-card">
+    <div class="card-heading"><div><h2>Today’s Forecast Discussion</h2><p id="discussion-day">A fresh public conversation begins every day.</p></div><button type="button" id="read-discussion">▶ Read comments aloud</button></div>
+    <div id="forecast-discussion" class="comment-feed" aria-live="polite"><p>Loading today’s comments…</p></div>
+    <form id="comment-form" class="comment-form">
+      <label>Display name<input id="comment-name" maxlength="40" required></label>
+      <label>Your forecast comment<textarea id="comment-text" maxlength="500" required placeholder="What weather are you seeing? What do you think of today’s forecast?"></textarea></label>
+      <label class="comment-honeypot" aria-hidden="true">Website<input id="comment-website" tabindex="-1" autocomplete="off"></label>
+      <div class="comment-actions"><button type="submit">Post to today’s discussion</button><span id="comment-status" role="status"></span></div>
+    </form>
+    <p class="forecast-source">Public comments are user-submitted. Do not use them for emergency or life-safety decisions.</p>
+  </article>
   <p class="forecast-source">Data: NOAA/National Weather Service. Satellite: NOAA/NESDIS/STAR. Consult weather.gov for official warnings.</p>
 </section>
 {% endblock %}

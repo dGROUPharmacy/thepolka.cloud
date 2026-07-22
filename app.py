@@ -8,6 +8,7 @@ import json
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -87,6 +88,23 @@ def advertising_connection():
     connection.row_factory = sqlite3.Row
     connection.execute("CREATE TABLE IF NOT EXISTS weather_ad_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event TEXT NOT NULL, created_at TEXT NOT NULL)")
     return connection
+
+
+def forecast_discussion_connection():
+    connection = sqlite3.connect(DATA_DIR / "forecast_discussion.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute("""CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        discussion_day TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        comment TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )""")
+    return connection
+
+
+def forecast_discussion_day():
+    return datetime.now(ZoneInfo("America/Denver")).date().isoformat()
 
 
 def recent_audits():
@@ -311,17 +329,42 @@ def forecast_api():
     try:
         forecast = nws_json("https://api.weather.gov/gridpoints/MKX/82,72/forecast")
         period = forecast["properties"]["periods"][0]
-        products = nws_json("https://api.weather.gov/products/types/AFD/locations/MKX")
-        graph = products.get("@graph", [])
-        discussion, discussion_issued = "No forecast discussion is currently available.", None
-        if graph:
-            latest = nws_json(graph[0]["@id"])
-            discussion = latest.get("productText", discussion)
-            discussion_issued = latest.get("issuanceTime")
-        return jsonify(period=period, discussion=discussion, discussion_issued=discussion_issued)
+        return jsonify(period=period)
     except Exception as exc:
         app.logger.exception("Weather data request failed")
         return jsonify(error="Weather data is temporarily unavailable.", detail=str(exc)), 502
+
+
+@app.route("/api/forecast/discussion", methods=["GET", "POST"])
+def forecast_discussion_api():
+    day = forecast_discussion_day()
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        name = " ".join(str(data.get("name", "")).strip().split())[:40]
+        comment = " ".join(str(data.get("comment", "")).strip().split())[:500]
+        if not name or not comment:
+            return jsonify(error="A display name and comment are required."), 400
+        if str(data.get("website", "")).strip():
+            return jsonify(status="received"), 202
+        with forecast_discussion_connection() as connection:
+            recent = connection.execute(
+                "SELECT created_at FROM comments WHERE discussion_day=? AND lower(display_name)=lower(?) ORDER BY id DESC LIMIT 1",
+                (day, name),
+            ).fetchone()
+            if recent:
+                last = datetime.fromisoformat(recent["created_at"])
+                if (datetime.now(timezone.utc) - last).total_seconds() < 60:
+                    return jsonify(error="Please wait one minute before commenting again."), 429
+            connection.execute(
+                "INSERT INTO comments (discussion_day, display_name, comment, created_at) VALUES (?, ?, ?, ?)",
+                (day, name, comment, datetime.now(timezone.utc).isoformat()),
+            )
+    with forecast_discussion_connection() as connection:
+        rows = connection.execute(
+            "SELECT id, display_name, comment, created_at FROM comments WHERE discussion_day=? ORDER BY id ASC LIMIT 100",
+            (day,),
+        ).fetchall()
+    return jsonify(day=day, refresh_timezone="America/Denver", comments=[dict(row) for row in rows])
 
 
 @app.post("/api/forecast/ad-event")
