@@ -1,0 +1,232 @@
+{% extends "layout.html" %}
+{% block title %}Mail Ecosystem | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/mail.css') }}">{% endblock %}
+{% block content %}
+
+<header class="me-header">
+  <h1>✉️ Mail Ecosystem</h1>
+  <p class="subhead">Identity-driven communication directory</p>
+</header>
+
+<main class="me-grid">
+
+  <section class="me-panel" id="panel-catalog">
+    <h2>Mailbox Catalog</h2>
+    <table class="me-table">
+      <thead>
+        <tr><th>Address</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="catalog-body">
+        <tr><td colspan="3" class="me-empty">Loading mailboxes…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="me-panel" id="panel-inbox">
+    <h2 id="inbox-title">Inbox</h2>
+    <p class="me-hint" id="inbox-hint">Select an address from the catalog to view its inbox.</p>
+    <div id="inbox-list" class="me-message-list"></div>
+  </section>
+
+  <section class="me-panel" id="panel-compose">
+    <h2>Outbound Compose Box</h2>
+    <label class="me-field">Sender Identity
+      <select id="compose-sender"></select>
+    </label>
+    <label class="me-field">Recipient Address
+      <select id="compose-recipient"></select>
+    </label>
+    <label class="me-field">Subject
+      <input type="text" id="compose-subject" placeholder="Subject">
+    </label>
+    <label class="me-field">Message Body
+      <textarea id="compose-body" placeholder="Write your message…" rows="6"></textarea>
+    </label>
+    <p class="me-status" id="compose-status" role="status" aria-live="polite"></p>
+    <button type="button" id="dispatch-btn" class="me-cta">Dispatch Outbound</button>
+  </section>
+
+  <section class="me-panel" id="panel-activity">
+    <h2>Ecosystem Activity Monitor</h2>
+    <div id="activity-list" class="me-activity-list">
+      <p class="me-hint">No activity yet.</p>
+    </div>
+  </section>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  var mailboxes = [];
+  var currentInbox = null;
+
+  function fmtTime(iso) {
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString();
+    } catch (e) { return iso; }
+  }
+
+  function fetchJSON(url, opts) {
+    return fetch(url, opts).then(function (res) {
+      return res.json().then(function (data) {
+        if (!res.ok) throw new Error(data.error || "Request failed");
+        return data;
+      });
+    });
+  }
+
+  function loadMailboxes() {
+    return fetchJSON("/api/mailboxes").then(function (data) {
+      mailboxes = data;
+      renderCatalog();
+      renderComposeOptions();
+    }).catch(function (err) {
+      document.getElementById("catalog-body").innerHTML =
+        '<tr><td colspan="3" class="me-empty">Error loading mailboxes: ' + err.message + '</td></tr>';
+    });
+  }
+
+  function renderCatalog() {
+    var body = document.getElementById("catalog-body");
+    if (!mailboxes.length) {
+      body.innerHTML = '<tr><td colspan="3" class="me-empty">No mailboxes yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = "";
+    mailboxes.forEach(function (mb) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><a href="#" class="me-address-link" data-address="' + mb.address + '">' + mb.address + '</a></td>' +
+        '<td><span class="me-badge">' + mb.status + '</span></td>' +
+        '<td><button type="button" class="me-view-btn" data-address="' + mb.address + '">View inbox</button></td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll(".me-address-link, .me-view-btn").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.preventDefault();
+        loadInbox(el.getAttribute("data-address"));
+      });
+    });
+  }
+
+  function renderComposeOptions() {
+    var senderSel = document.getElementById("compose-sender");
+    var recipientSel = document.getElementById("compose-recipient");
+    senderSel.innerHTML = "";
+    recipientSel.innerHTML = "";
+    mailboxes.forEach(function (mb) {
+      var o1 = document.createElement("option");
+      o1.value = mb.address; o1.textContent = mb.address;
+      senderSel.appendChild(o1);
+      var o2 = document.createElement("option");
+      o2.value = mb.address; o2.textContent = mb.address;
+      recipientSel.appendChild(o2);
+    });
+    if (mailboxes.length > 1) recipientSel.selectedIndex = 1;
+  }
+
+  function loadInbox(address) {
+    currentInbox = address;
+    document.getElementById("inbox-title").textContent = "Inbox — " + address;
+    document.getElementById("inbox-hint").textContent = "Loading…";
+    fetchJSON("/api/inbox/" + encodeURIComponent(address)).then(function (msgs) {
+      document.getElementById("inbox-hint").textContent =
+        msgs.length ? (msgs.length + " message(s).") : "No messages in this inbox yet.";
+      var list = document.getElementById("inbox-list");
+      list.innerHTML = "";
+      msgs.forEach(function (m) {
+        var div = document.createElement("div");
+        div.className = "me-message" + (m.read ? "" : " me-unread");
+        div.innerHTML =
+          '<div class="me-message-head">' +
+            '<span class="me-message-from">From: ' + m.sender + '</span>' +
+            '<span class="me-message-time">' + fmtTime(m.created_at) + '</span>' +
+          '</div>' +
+          '<div class="me-message-subject">' + (m.subject || "(no subject)") + '</div>' +
+          '<div class="me-message-body">' + (m.body || "") + '</div>';
+        if (!m.read) {
+          var markBtn = document.createElement("button");
+          markBtn.type = "button";
+          markBtn.className = "me-mark-read";
+          markBtn.textContent = "Mark as read";
+          markBtn.addEventListener("click", function () {
+            fetchJSON("/api/read/" + m.id, { method: "POST" }).then(function () {
+              loadInbox(address);
+              loadActivity();
+            });
+          });
+          div.appendChild(markBtn);
+        }
+        list.appendChild(div);
+      });
+    }).catch(function (err) {
+      document.getElementById("inbox-hint").textContent = "Error: " + err.message;
+    });
+  }
+
+  function loadActivity() {
+    fetchJSON("/api/activity").then(function (entries) {
+      var list = document.getElementById("activity-list");
+      if (!entries.length) {
+        list.innerHTML = '<p class="me-hint">No activity yet.</p>';
+        return;
+      }
+      list.innerHTML = "";
+      entries.forEach(function (e) {
+        var row = document.createElement("div");
+        row.className = "me-activity-row me-activity-" + e.action;
+        var desc = e.action.toUpperCase();
+        if (e.sender && e.recipient) desc += ": " + e.sender + " → " + e.recipient;
+        if (e.subject) desc += ' — "' + e.subject + '"';
+        row.innerHTML =
+          '<span class="me-activity-time">' + fmtTime(e.timestamp) + '</span>' +
+          '<span class="me-activity-desc">' + desc + '</span>';
+        list.appendChild(row);
+      });
+    });
+  }
+
+  document.getElementById("dispatch-btn").addEventListener("click", function () {
+    var sender = document.getElementById("compose-sender").value;
+    var recipient = document.getElementById("compose-recipient").value;
+    var subject = document.getElementById("compose-subject").value.trim();
+    var body = document.getElementById("compose-body").value.trim();
+    var statusEl = document.getElementById("compose-status");
+
+    if (sender === recipient) {
+      statusEl.textContent = "Sender and recipient can't be the same mailbox.";
+      statusEl.className = "me-status me-status-error";
+      return;
+    }
+
+    statusEl.textContent = "Dispatching…";
+    statusEl.className = "me-status";
+
+    fetchJSON("/api/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sender: sender, recipient: recipient, subject: subject, body: body })
+    }).then(function () {
+      statusEl.textContent = "Delivered to " + recipient + ".";
+      statusEl.className = "me-status me-status-ok";
+      document.getElementById("compose-subject").value = "";
+      document.getElementById("compose-body").value = "";
+      loadActivity();
+      if (currentInbox === recipient) loadInbox(currentInbox);
+    }).catch(function (err) {
+      statusEl.textContent = "Error: " + err.message;
+      statusEl.className = "me-status me-status-error";
+    });
+  });
+
+  loadMailboxes();
+  loadActivity();
+  setInterval(loadActivity, 8000);
+})();
+</script>
+{% endblock %}

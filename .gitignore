@@ -1,4 +1,5 @@
 .venv/
+.verify-deps/
 venv/
 __pycache__/
 *.py[cod]

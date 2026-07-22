@@ -2,11 +2,19 @@
 
 import os
 import sqlite3
+import io
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+from resume_generator.normalize import normalize
+from resume_generator.renderer.markdown import render_markdown
+from resume_generator.renderer.html import render_html
+from resume_generator.renderer.pdf import render_pdf
+from resume_generator.renderer.docx import render_docx
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -49,6 +57,20 @@ def database_connection():
     return connection
 
 
+def mail_connection():
+    connection = sqlite3.connect(DATA_DIR / "mail.db")
+    connection.row_factory = sqlite3.Row
+    connection.executescript("""
+        CREATE TABLE IF NOT EXISTS mailboxes (address TEXT PRIMARY KEY, display_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'Active');
+        CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, recipient TEXT NOT NULL, subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, read INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS activity_log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL, action TEXT NOT NULL, sender TEXT, recipient TEXT, subject TEXT, detail TEXT);
+    """)
+    seeds = [("andy@alight", "Andy"), ("ericka@northwesternmutual", "Ericka"), ("michelle@amazon", "Michelle"), ("robert@ibm", "Robert"), ("katie@lyft", "Katie"), ("jordan@salesforce", "Jordan"), ("pia@netflix", "Pia"), ("marcus@intuit", "Marcus"), ("lena@stripe", "Lena")]
+    connection.executemany("INSERT OR IGNORE INTO mailboxes (address, display_name) VALUES (?, ?)", seeds)
+    connection.commit()
+    return connection
+
+
 def audit_snapshot():
     routes = {rule.rule for rule in app.url_map.iter_rules()}
     required = ["/", "/agent", "/ai-marketplace", "/ai-warehouse", "/health"]
@@ -77,8 +99,75 @@ def home():
 def ecosystem_page(page):
     if page not in ECOSYSTEM_PAGES:
         return not_found(None)
+    if page == "resume":
+        return render_template("resume_generator.html", active="resume")
+    if page == "mail":
+        return render_template("mail.html", active="mail")
     title, description = ECOSYSTEM_PAGES[page]
     return render_template("ecosystem.html", active=page, page=page, title=title, description=description)
+
+
+@app.post("/api/resume-generator")
+def generate_resume():
+    raw = request.get_json(silent=True) or {}
+    if not raw:
+        return jsonify(error="No résumé data received"), 400
+    data = normalize(raw)
+    if not data["name"]:
+        return jsonify(error="A name is required"), 400
+    name_slug = data["name"].replace(" ", "_").replace("/", "-")
+    bundle = io.BytesIO()
+    with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr(f"{name_slug}_resume.md", render_markdown(data).encode("utf-8"))
+        archive.writestr(f"{name_slug}_resume.html", render_html(data).encode("utf-8"))
+        archive.writestr(f"{name_slug}_resume.pdf", render_pdf(data))
+        archive.writestr(f"{name_slug}_resume.docx", render_docx(data))
+    bundle.seek(0)
+    return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name=f"{name_slug}_resume_bundle.zip")
+
+
+@app.get("/api/mailboxes")
+def mailboxes_api():
+    with mail_connection() as db:
+        return jsonify([dict(row) for row in db.execute("SELECT address, display_name, status FROM mailboxes ORDER BY address")])
+
+
+@app.get("/api/inbox/<path:address>")
+def inbox_api(address):
+    with mail_connection() as db:
+        rows = db.execute("SELECT id, sender, recipient, subject, body, created_at, read FROM messages WHERE recipient=? ORDER BY id DESC", (address,)).fetchall()
+        return jsonify([dict(row) for row in rows])
+
+
+@app.get("/api/activity")
+def activity_api():
+    with mail_connection() as db:
+        rows = db.execute("SELECT timestamp, action, sender, recipient, subject, detail FROM activity_log ORDER BY id DESC LIMIT 50").fetchall()
+        return jsonify([dict(row) for row in rows])
+
+
+@app.post("/api/send")
+def send_mail_api():
+    data = request.get_json(silent=True) or {}
+    sender, recipient = str(data.get("sender", "")).strip(), str(data.get("recipient", "")).strip()
+    if not sender or not recipient:
+        return jsonify(error="Sender and recipient are required"), 400
+    with mail_connection() as db:
+        known = db.execute("SELECT COUNT(*) FROM mailboxes WHERE address IN (?, ?)", (sender, recipient)).fetchone()[0]
+        if known != 2:
+            return jsonify(error="Unknown mailbox"), 400
+        timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        subject, body = str(data.get("subject", ""))[:200], str(data.get("body", ""))[:10000]
+        db.execute("INSERT INTO messages (sender, recipient, subject, body, created_at) VALUES (?, ?, ?, ?, ?)", (sender, recipient, subject, body, timestamp))
+        db.execute("INSERT INTO activity_log (timestamp, action, sender, recipient, subject, detail) VALUES (?, 'delivered', ?, ?, ?, 'Message routed to recipient inbox.')", (timestamp, sender, recipient, subject))
+    return jsonify(status="delivered")
+
+
+@app.post("/api/read/<int:message_id>")
+def mark_mail_read_api(message_id):
+    with mail_connection() as db:
+        db.execute("UPDATE messages SET read=1 WHERE id=?", (message_id,))
+    return jsonify(status="ok")
 
 
 @app.get("/agent")
