@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}AI Reviews | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page" id="ai-marketplace">
+  <p class="eyebrow">Human expertise for better AI</p>
+  <h1>AI Reviews & Contributor Market</h1>
+  <p class="lead">Submit original evaluations, annotations, corrections, and domain-specific material for human review and potential paid licensing to AI projects.</p>
+  <div class="notice-card">
+    <h2>One-cent acquisition pilot</h2>
+    <p><strong>Each eligible item accepted into the dataset earns $0.01.</strong> Uploading alone does not earn payment. Items must pass originality, provenance, rights, duplication, safety, and quality review. Earnings accrue until contributor verification, tax requirements, a minimum payout threshold, and payment processing are active.</p>
+  </div>
+  <div class="market-grid">
+    <form method="post" class="market-form">
+      <h2>Submit a contribution</h2>
+      {% if submitted %}<p class="form-success">Submission received for review.</p>{% endif %}
+      {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+      <label>Title<input name="title" maxlength="120" required></label>
+      <label>Area of expertise<input name="expertise" maxlength="120" required></label>
+      <label>Contribution type
+        <select name="content_type" required>
+          <option value="">Choose one</option>
+          <option>AI response evaluation</option><option>Factual correction</option>
+          <option>Dataset annotation</option><option>Original prompt and rubric</option>
+          <option>Domain-specific reference content</option>
+        </select>
+      </label>
+      <label>Description<textarea name="description" maxlength="3000" rows="7" required></textarea></label>
+      <label class="check-label"><input type="checkbox" name="rights_confirmed" value="yes" required> I created this material or control the rights needed to license it.</label>
+      <button class="cta-button" type="submit">Submit for review</button>
+    </form>
+    <div class="submission-feed">
+      <h2>Review queue</h2>
+      {% for item in submissions %}
+        <article class="submission-card"><strong>{{ item.title }}</strong><p>{{ item.content_type }} · {{ item.expertise }}</p><span class="status-pill">{{ item.status }}</span></article>
+      {% else %}<p class="small-note">No public submissions yet.</p>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

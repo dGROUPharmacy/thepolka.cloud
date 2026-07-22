@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}AI Content Warehouse | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page" id="seeitagain">
+  <p class="eyebrow">Curated data inventory</p>
+  <h1>AI Content Warehouse</h1>
+  <p class="lead">A catalog of reviewed, accepted, and licensable human and AI-assisted content. Raw submissions remain outside this public inventory until they pass provenance, rights, duplication, safety, and quality checks.</p>
+  <div class="warehouse-stats">
+    <div><strong>{{ catalog|length }}</strong><span>Accepted items</span></div>
+    <div><strong>{{ counts.get('submitted', 0) }}</strong><span>Awaiting review</span></div>
+    <div><strong>$0.01</strong><span>Per accepted pilot item</span></div>
+  </div>
+  <div class="catalog-grid">
+    {% for item in catalog %}
+      <article class="submission-card">
+        <p class="eyebrow">Item {{ item.id }} · {{ item.content_type }}</p>
+        <h2>{{ item.title }}</h2><p>{{ item.expertise }}</p>
+        <span class="status-pill">Accepted</span>
+      </article>
+    {% else %}
+      <div class="notice-card"><h2>Warehouse ready</h2><p>No item is public yet. Accepted records will appear here automatically after the review workflow is activated.</p></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

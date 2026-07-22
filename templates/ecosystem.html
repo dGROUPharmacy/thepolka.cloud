@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}{{ title }} | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page" id="{{ page }}">
+  <p class="eyebrow">ThePolka.Cloud ecosystem</p>
+  <h1>{{ title }}</h1>
+  <p class="lead">{{ description }}</p>
+  <div class="notice-card">
+    <h2>Gateway restored</h2>
+    <p>This destination now runs inside the permanent Python service. Its original tools and content can be transferred here without depending on an offline legacy server.</p>
+  </div>
+</section>
+{% endblock %}

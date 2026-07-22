@@ -33,12 +33,15 @@
 
       <nav class="sidebar-nav" aria-label="Global navigation">
         <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
-        <a href="https://mail-ecosystem.thepolka.cloud/#mymail" class="nav-link">Mail</a>
-        <a href="https://resume-generator.thepolka.cloud/#resume" class="nav-link">Résumé Generator</a>
-        <a href="https://faire.thepolka.cloud/#ai" class="nav-link">FAIRE OS</a>
-        <a href="https://cad.thepolka.cloud/#ack" class="nav-link">CAD Experience</a>
-        <a href="https://directory.thepolka.cloud/#filing" class="nav-link">Navigate</a>
+        <a href="{{ url_for('ecosystem_page', page='mail') }}" class="nav-link{% if active == 'mail' %} active{% endif %}">Mail</a>
+        <a href="{{ url_for('ecosystem_page', page='resume') }}" class="nav-link{% if active == 'resume' %} active{% endif %}">Résumé Generator</a>
+        <a href="{{ url_for('ecosystem_page', page='faire') }}" class="nav-link{% if active == 'faire' %} active{% endif %}">FAIRE OS</a>
+        <a href="{{ url_for('ecosystem_page', page='cad') }}" class="nav-link{% if active == 'cad' %} active{% endif %}">CAD Experience</a>
+        <a href="{{ url_for('ecosystem_page', page='directory') }}" class="nav-link{% if active == 'directory' %} active{% endif %}">Navigate</a>
         <a href="https://store.thepolka.cloud/#support" class="nav-link">Boutique</a>
+        <a href="{{ url_for('agent_page') }}" class="nav-link{% if active == 'agent' %} active{% endif %}">Agent</a>
+        <a href="{{ url_for('ai_marketplace') }}" class="nav-link{% if active == 'marketplace' %} active{% endif %}">AI Reviews</a>
+        <a href="{{ url_for('ai_warehouse') }}" class="nav-link{% if active == 'warehouse' %} active{% endif %}">AI Content Warehouse</a>
       </nav>
 
       <img src="{{ url_for('static', filename='img/thepolka.cloud.png') }}" alt="ThePolka.Cloud" loading="lazy">

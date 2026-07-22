@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Agent | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page" id="agent">
+  <p class="eyebrow">Operational evidence</p>
+  <h1>ThePolka.Cloud Agent</h1>
+  <p class="lead">A live, inspectable audit of the permanent Python application.</p>
+  <div class="status-banner status-{{ audit.status }}">
+    <strong>{{ audit.status|upper }}</strong><span>Checked {{ audit.checked_at }}</span>
+  </div>
+  <div class="card-grid">
+    {% for check in audit.checks %}
+      <article class="audit-card">
+        <span class="audit-mark" aria-hidden="true">{{ "✓" if check.ok else "!" }}</span>
+        <h2>{{ check.name }}</h2><p>{{ "Verified" if check.ok else "Needs attention" }}</p>
+      </article>
+    {% endfor %}
+  </div>
+  <p class="small-note">This is an on-demand application audit. Scheduled navigation and security scans are the next automation milestone.</p>
+  <a class="text-link" href="{{ url_for('audit_api') }}">View machine-readable evidence →</a>
+</section>
+{% endblock %}
