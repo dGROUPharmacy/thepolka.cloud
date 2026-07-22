@@ -1,0 +1,22 @@
+name: Automated site audit
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record application audit
+        run: |
+          curl --fail --retry 3 --retry-delay 10 --silent --show-error https://thepolka.cloud/api/audit
+      - name: Verify public navigation
+        run: |
+          for route in / /ecosystem/mail /ecosystem/resume /ecosystem/faire /ecosystem/cad /ecosystem/directory /agent; do
+            curl --fail --retry 3 --retry-delay 10 --silent --show-error --output /dev/null "https://thepolka.cloud${route}"
+          done

@@ -71,7 +71,24 @@ def mail_connection():
     return connection
 
 
-def audit_snapshot():
+def audit_connection():
+    connection = sqlite3.connect(DATA_DIR / "audit.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS audit_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, checked_at TEXT NOT NULL, status TEXT NOT NULL)"
+    )
+    return connection
+
+
+def recent_audits():
+    with audit_connection() as connection:
+        rows = connection.execute(
+            "SELECT checked_at, status FROM audit_runs ORDER BY id DESC LIMIT 5"
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def audit_snapshot(record=False):
     routes = {rule.rule for rule in app.url_map.iter_rules()}
     required = ["/", "/agent", "/ai-marketplace", "/ai-warehouse", "/health"]
     checks = [
@@ -80,12 +97,22 @@ def audit_snapshot():
         {"name": "Persistent data directory available", "ok": DATA_DIR.is_dir()},
         {"name": "Production secret configured", "ok": app.config["SECRET_KEY"] != "development-only-change-me"},
     ]
-    return {
+    snapshot = {
         "service": "thepolka.cloud",
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "status": "pass" if all(item["ok"] for item in checks) else "attention",
         "checks": checks,
     }
+    if record:
+        with audit_connection() as connection:
+            connection.execute(
+                "INSERT INTO audit_runs (checked_at, status) VALUES (?, ?)",
+                (snapshot["checked_at"], snapshot["status"]),
+            )
+            connection.execute(
+                "DELETE FROM audit_runs WHERE id NOT IN (SELECT id FROM audit_runs ORDER BY id DESC LIMIT 100)"
+            )
+    return snapshot
 
 
 @app.get("/")
@@ -103,6 +130,12 @@ def ecosystem_page(page):
         return render_template("resume_generator.html", active="resume")
     if page == "mail":
         return render_template("mail.html", active="mail")
+    if page == "cad":
+        return render_template("cad.html")
+    if page == "faire":
+        return render_template("faire.html", active="faire")
+    if page == "directory":
+        return render_template("directory.html", active="directory")
     title, description = ECOSYSTEM_PAGES[page]
     return render_template("ecosystem.html", active=page, page=page, title=title, description=description)
 
@@ -172,12 +205,26 @@ def mark_mail_read_api(message_id):
 
 @app.get("/agent")
 def agent_page():
-    return render_template("agent.html", active="agent", audit=audit_snapshot())
+    audit = audit_snapshot(record=True)
+    return render_template("agent.html", active="agent", audit=audit, history=recent_audits())
 
 
 @app.get("/api/audit")
 def audit_api():
-    return jsonify(audit_snapshot())
+    snapshot = audit_snapshot(record=True)
+    snapshot["recent_runs"] = recent_audits()
+    return jsonify(snapshot)
+
+
+@app.post("/api/chat")
+def faire_chat_api():
+    data = request.get_json(silent=True) or {}
+    message = str(data.get("message", "")).strip()
+    if not message:
+        return jsonify(error="Write a message first."), 400
+    return jsonify(
+        reply="FAIRE is online in local-first demonstration mode. Connect an approved hosted or local model to enable generated responses."
+    )
 
 
 @app.route("/ai-marketplace", methods=["GET", "POST"])

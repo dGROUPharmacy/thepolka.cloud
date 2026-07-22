@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block title %}Navigate — Internal Directory{% endblock %}
+{% block content %}
+<div style="max-width: 640px; margin: 4rem auto; font-family: system-ui, sans-serif;">
+  <h1>Internal Directory Service</h1>
+  <p>This is an internal record-keeping tool. It is intentionally not linked
+     from any public page or sitemap. Access requires an admin token sent
+     via the <code>X-Admin-Token</code> header on API requests.</p>
+  <ul>
+    <li><code>GET /admin/employees</code> — list records</li>
+    <li><code>POST /admin/employees</code> — add a record</li>
+    <li><code>DELETE /admin/employees/&lt;id&gt;</code> — remove a record</li>
+    <li><code>GET /route?display_email=...&amp;anchor=...</code> — resolve routing target</li>
+  </ul>
+</div>
+{% endblock %}

@@ -8,6 +8,17 @@
   <div class="status-banner status-{{ audit.status }}">
     <strong>{{ audit.status|upper }}</strong><span>Checked {{ audit.checked_at }}</span>
   </div>
+  <section class="audit-history" aria-labelledby="audit-history-title">
+    <h2 id="audit-history-title">Five most recent checks</h2>
+    <ol class="audit-timeline">
+      {% for run in history %}
+      <li style="opacity: {{ 1 - (loop.index0 * 0.16) }}">
+        <strong>{{ run.status|upper }}</strong>
+        <time datetime="{{ run.checked_at }}">{{ run.checked_at }}</time>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
   <div class="card-grid">
     {% for check in audit.checks %}
       <article class="audit-card">
@@ -16,7 +27,7 @@
       </article>
     {% endfor %}
   </div>
-  <p class="small-note">This is an on-demand application audit. Scheduled navigation and security scans are the next automation milestone.</p>
+  <p class="small-note">Audit evidence is retained in persistent storage. GitHub runs the same check every 30 minutes, whether or not anyone is viewing this page.</p>
   <a class="text-link" href="{{ url_for('audit_api') }}">View machine-readable evidence →</a>
 </section>
 {% endblock %}

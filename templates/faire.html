@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block title %}FAIRE OS — your local AI, everywhere | ThePolka.Cloud{% endblock %}
+<meta name="description" content="Faire: a floating AI companion for thepolka.cloud.">
+<link rel="icon" href="/static/img/faire-icon.svg">
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/faire.css">
+{% endblock %}
+
+{% block content %}
+<main class="faire-page">
+  <p class="faire-page__eyebrow">thepolka.cloud presents</p>
+  <header class="faire-page__header">
+    <h1>Faire</h1>
+    <p>A small glowing presence that floats in the corner of every page — click her and she's ready to talk. No new tab, no separate app, just a question away.</p>
+  </header>
+  <section class="faire-page__grid">
+    <div class="faire-card">
+      <h3>Always there</h3>
+      <p>The same orb follows you across every page of thepolka.cloud — one consistent companion, not a different chatbot per site.</p>
+    </div>
+    <div class="faire-card">
+      <h3>Local-first</h3>
+      <p>Faire is designed to run on infrastructure you control, with the option to fall back to a hosted model when you want more power.</p>
+    
+    </div>
+    <div class="faire-card">
+      <h3>Lightweight</h3>
+      <p>No frameworks, no build step for the widget itself — just a small script and stylesheet any page can include.</p>
+    </div>
+    <div class="faire-card">
+      <h3>Yours to extend</h3>
+      <p>Swap the backend, change her voice, give her memory — Faire is a shell you grow into, not a fixed product.</p>
+    </div>
+  </section>
+
+  <div class="faire-page__cta">
+    <strong>Try her now</strong> — click the glowing orb in the bottom right corner of this page.
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+  <!-- ===================== FAIRE WIDGET (copy this block to any page) ===================== -->
+<link rel="stylesheet" href="/static/css/faire-widget.css">
+<div id="faire-root"></div>
+<script src="/static/js/faire-widget.js" defer></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    Faire.init({ apiBase: '/api', title: 'Faire', subtitle: 'your local AI, everywhere' });
+  });
+</script>
+{% endblock %}

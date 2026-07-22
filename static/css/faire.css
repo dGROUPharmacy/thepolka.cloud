@@ -1,0 +1,50 @@
+:root{
+  --bg: #0d0b14;
+  --bg-alt: #15111f;
+  --fg: #f1eaff;
+  --muted: #9c8fc2;
+  --accent: #c79bff;
+  --accent-2: #6ee7c8;
+  --border: rgba(199,155,255,0.18);
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(142,123,255,.18), transparent 50%),
+    radial-gradient(ellipse at 90% 20%, rgba(110,231,200,.12), transparent 45%),
+    var(--bg);
+  color:var(--fg);
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height:100vh;
+}
+.faire-page{ max-width:880px; margin:0 auto; padding:80px 24px 140px; }
+.faire-page__eyebrow{
+  color:var(--accent-2); font-size:.78rem; letter-spacing:.12em;
+  text-transform:uppercase; margin:0 0 14px;
+}
+.faire-page__header h1{
+  font-size:3rem; margin:0 0 14px; font-weight:800; letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#f4c6ff,#c79bff 40%,#6ee7c8);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.faire-page__header p{ color:var(--muted); font-size:1.1rem; max-width:560px; line-height:1.6; }
+
+.faire-page__grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:48px;
+}
+@media (max-width:680px){ .faire-page__grid{ grid-template-columns:1fr; } }
+
+.faire-card{
+  background:var(--bg-alt); border:1px solid var(--border); border-radius:18px;
+  padding:24px; color:var(--muted); line-height:1.6;
+}
+.faire-card h3{ color:var(--fg); margin:0 0 8px; font-size:1.05rem; }
+
+.faire-page__cta{
+  margin-top:56px; padding:28px; border-radius:18px;
+  border:1px solid var(--border);
+  background:linear-gradient(135deg, rgba(199,155,255,.08), rgba(110,231,200,.06));
+  color:var(--muted);
+}
+.faire-page__cta strong{ color:var(--fg); }

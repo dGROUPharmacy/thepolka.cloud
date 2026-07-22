@@ -313,3 +313,7 @@ body {
   .market-grid { grid-template-columns: 1fr; }
   .warehouse-stats { grid-template-columns: 1fr; }
 }
+
+.audit-timeline { list-style: none; margin: 1rem 0 2rem; padding: 0; }
+.audit-timeline li { display: flex; gap: 1rem; justify-content: space-between; border-bottom: 1px solid rgba(54, 49, 42, .2); padding: .7rem 0; transition: opacity .25s ease; }
+.audit-timeline time { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .85rem; }
