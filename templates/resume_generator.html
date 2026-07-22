@@ -1,247 +1,485 @@
-{% extends "layout.html" %}
-{% set active = "resume" %}
-{% block title %}Résumé Generator | ThePolka.Cloud{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume Machine — thepolka.cloud</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/dist/tabler-icons.min.css">
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #f7f6f2;
+      --surface:   #ffffff;
+      --border:    rgba(0,0,0,.12);
+      --border-md: rgba(0,0,0,.22);
+      --text:      #1a1a1a;
+      --muted:     #666;
+      --hint:      #999;
+      --blue:      #185FA5;
+      --blue-bg:   #dbeafe;
+      --blue-text: #1e3a8a;
+      --green-bg:  #dcfce7;
+      --green-text:#14532d;
+      --purple-bg: #ede9fe;
+      --purple-text:#3b0764;
+      --radius:    8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #18181b;
+        --surface:   #27272a;
+        --border:    rgba(255,255,255,.1);
+        --border-md: rgba(255,255,255,.2);
+        --text:      #fafafa;
+        --muted:     #a1a1aa;
+        --hint:      #71717a;
+        --blue:      #60a5fa;
+        --blue-bg:   #1e3a5f;
+        --blue-text: #bfdbfe;
+        --green-bg:  #14532d;
+        --green-text:#bbf7d0;
+        --purple-bg: #3b0764;
+        --purple-text:#ddd6fe;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
 
-{% block content %}
-<section class="resume-tool" id="resume">
+    /* ── Layout ── */
+    .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
-  <!-- Title -->
-  <h1>Generate your Résumé Bundle</h1>
+    /* ── Page header ── */
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+    .page-header p  { font-size: 14px; color: var(--muted); }
+    .pill {
+      display: inline-block;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      background: var(--blue-bg); color: var(--blue-text);
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+    }
 
-  <!-- Instructions -->
-  <p class="subhead">Complete each section. Every entry should model an "ACTION → RESULT → IMPACT" narrative.</p>
+    /* ── Accordion sections ── */
+    .section {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .sec-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; cursor: pointer; user-select: none;
+      transition: background .12s;
+    }
+    .sec-header:hover { background: var(--bg); }
+    .sec-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; }
+    .sec-icon  { font-size: 18px; color: var(--muted); }
+    .chevron   { font-size: 16px; color: var(--hint); transition: transform .2s; }
+    .chevron.open { transform: rotate(180deg); }
+    .sec-body  { padding: 0 16px 16px; border-top: 0.5px solid var(--border); }
 
-  <div class="rg-form">
-    <div class="rg-section" data-section="basics">
-      <div class="rg-section-body" id="rg-basics-body">
-        <label class="rg-field">👤Full name
-          <input type="text" id="field-name" placeholder="e.g. Andrew Kieckhefer">
-        </label>
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 12px; color: var(--muted);
+      margin: 12px 0 4px; letter-spacing: .03em;
+    }
+    input[type=text], textarea {
+      width: 100%; font-size: 14px;
+      padding: 8px 10px;
+      border: 0.5px solid var(--border-md);
+      border-radius: var(--radius);
+      background: var(--bg); color: var(--text);
+      font-family: inherit; resize: vertical;
+      transition: border-color .15s, background .15s;
+    }
+    input[type=text]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--blue);
+      background: var(--surface);
+    }
+    textarea { min-height: 60px; line-height: 1.5; }
 
-        <label class="rg-field">Professional title
-          <input type="text" id="field-title" placeholder="e.g. Web developer">
-        </label>
+    /* ── ARI entry cards ── */
+    .entry-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px; margin-top: 10px; position: relative;
+    }
+    .entry-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px;
+    }
+    .ari-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .ari-row  { display: grid; grid-template-columns: 68px 1fr; gap: 8px; align-items: start; }
+    .ari-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; padding: 4px 6px; border-radius: var(--radius);
+      text-align: center; margin-top: 8px;
+    }
+    .badge-a { background: var(--blue-bg);   color: var(--blue-text); }
+    .badge-r { background: var(--green-bg);  color: var(--green-text); }
+    .badge-i { background: var(--purple-bg); color: var(--purple-text); }
+    .remove-btn {
+      position: absolute; top: 10px; right: 10px;
+      background: none; border: none; cursor: pointer;
+      font-size: 18px; color: var(--hint); line-height: 1;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .remove-btn:hover { color: var(--text); background: var(--border); }
 
-        <label class="rg-field">Purpose Statement (1–2 sentences)
-          <textarea id="field-purpose" placeholder="Computer enthusiast with experience in Python, Linux, and data processing in cloud environments to administer an enterprise"></textarea>
-        </label>
-      </div>
-    </div>
+    /* ── Add buttons ── */
+    .add-btn {
+      margin-top: 10px; width: 100%; padding: 9px;
+      border: 0.5px dashed var(--border-md);
+      border-radius: var(--radius);
+      background: none; color: var(--muted);
+      font-size: 13px; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background .12s, color .12s;
+    }
+    .add-btn:hover { background: var(--bg); color: var(--text); }
 
-    <div class="rg-section" data-section="contact">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-contact">
-        <span>📬 Contact &amp; Links</span><span class="rg-chevron">⌃</span>
-      </button>
+    /* ── Simple list (hobbies) ── */
+    .simple-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .simple-tag  {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--bg); border: 0.5px solid var(--border-md);
+      border-radius: 20px; padding: 4px 10px 4px 12px;
+      font-size: 13px;
+    }
+    .simple-tag button {
+      background: none; border: none; cursor: pointer;
+      color: var(--hint); font-size: 15px; line-height: 1; padding: 0 2px;
+    }
+    .simple-tag button:hover { color: var(--text); }
+    .add-simple-row { display: flex; gap: 6px; margin-top: 8px; }
+    .add-simple-row input { flex: 1; }
+    .add-simple-row button {
+      padding: 8px 14px; font-size: 13px;
+      border: 0.5px solid var(--border-md); border-radius: var(--radius);
+      background: var(--bg); color: var(--text); cursor: pointer; font-family: inherit;
+    }
+    .add-simple-row button:hover { background: var(--surface); }
 
-      <div class="rg-section-body" id="rg-body-contact">
-        <label class="rg-field">Email
-          <input type="email" id="field-email" placeholder="1akieckhefer@gmail.com">
-        </label>
+    /* ── Generate button ── */
+    .generate-btn {
+      width: 100%; padding: 15px; margin-top: 1.5rem;
+      background: var(--text); color: var(--surface);
+      border: none; border-radius: var(--radius-lg);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity .15s, transform .1s;
+    }
+    .generate-btn:hover   { opacity: .88; }
+    .generate-btn:active  { transform: scale(.99); }
+    .generate-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-        <label class="rg-field">Phone
-          <input type="tel" id="field-phone" placeholder="+1 (414)690-2101; +1(865)244-9678">
-        </label>
+    /* ── Spinner ── */
+    .spinner {
+      display: none; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        <label class="rg-field">Location
-          <input type="text" id="field-location" placeholder="Milwaukee, Wisconsin">
-        </label>
+    /* ── Status ── */
+    .status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 20px; text-align: center; }
+    .status.error { color: #dc2626; }
+    .status.success { color: #16a34a; }
 
-        <label class="rg-field">Links (one per line: Label then URL)
-          <textarea id="field-links" placeholder="GitHub https://github.com/Reinheitsg-botTle;LinkedIn https://linkedin.com/company/openai-residency"></textarea>
-        </label>
-      </div>
-    </div>
-
-    <div class="rg-section" data-section="experience">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-experience">
-        <span>💼 Experience</span><span class="rg-chevron"></span>
-      </button>
-
-      <div class="rg-section-body" id="rg-body-experience">
-        <p class="rg-hint">Each position: Role · Company · Dates</p>
-        <div class="rg-entry-list" id="rg-list-experience"></div>
-        <button type="button" class="rg-add-entry" data-target="experience">+ Add position</button>
-      </div>
-    </div>
-
-    <div class="rg-section" data-section="volunteer">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-volunteer">
-        <span>🤝 Volunteer</span><span class="rg-chevron"></span>
-      </button>
-      <div class="rg-section-body" id="rg-body-volunteer">
-        <p class="rg-hint">Role · Organization · Dates</p>
-        <div class="rg-entry-list" id="rg-list-volunteer"></div>
-        <button type="button" class="rg-add-entry" data-target="volunteer">+ Add role</button>
-      </div>
-    </div>
-
-    <div class="rg-section" data-section="certificates">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-certificates">
-        <span>🎓 Certifications</span><span class="rg-chevron">⌃</span>
-      </button>
-      <div class="rg-section-body" id="rg-body-certificates">
-        <p class="rg-hint">Certificate · Issuer · Date</p>
-        <div class="rg-entry-list" id="rg-list-certificates"></div>
-        <button type="button" class="rg-add-entry" data-target="certificates">+ Add certificate</button>
-      </div>
-    </div>
-
-    <div class="rg-section" data-section="awards">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-awards">
-        <span>🏆 Awards</span><span class="rg-chevron"></span>
-      </button>
-      <div class="rg-section-body" id="rg-body-awards">
-        <p class="rg-hint">Award · Issuer · Date</p>
-        <div class="rg-entry-list" id="rg-list-awards"></div>
-        <button type="button" class="rg-add-entry" data-target="awards">+ Add award</button>
-      </div>
-    </div>
-
-    <div class="rg-section" data-section="hobbies">
-      <button type="button" class="rg-section-header" aria-expanded="true" aria-controls="rg-body-hobbies">
-        <span>⚡ Hobbies</span><span class="rg-chevron"></span>
-      </button>
-      <div class="rg-section-body" id="rg-body-hobbies">
-        <label class="rg-field">Hobbies (comma-separated)
-          <input type="text" id="field-hobbies" placeholder="Hiking, Chess, Photography">
-        </label>
-      </div>
-    </div>
-
+    /* ── Section hint text ── */
+    .hint { font-size: 13px; color: var(--hint); margin-top: 10px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-header">
+    <div class="pill">Resume Machine</div>
+    <h1>Generate your resume bundle</h1>
+    <p>Fill in each section — every entry uses Action → Result → Impact. One click downloads all 4 formats.</p>
   </div>
 
-  <p class="rg-status" id="rg-status" role="status" aria-live="polite"></p>
-  <button type="button" id="generate-btn" class="cta-button">
-    Generate all 4 formats &amp; download
+  <!-- ── NAME & PURPOSE ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('basics')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-user sec-icon" aria-hidden="true"></i> Name &amp; purpose</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-basics" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-basics">
+      <label for="name">Full name</label>
+      <input type="text" id="name" placeholder="Andrew Kieckhefer" autocomplete="name">
+      <label for="job-title">Professional title</label>
+      <input type="text" id="job-title" placeholder="Software Engineer · Developer I">
+      <label for="purpose">Purpose statement <span style="font-weight:400;color:var(--hint)">(1–2 sentences)</span></label>
+      <textarea id="purpose" rows="3" placeholder="Driven engineer building tools that reduce friction for real people. Seeking a Developer I role where I can contribute across the stack from day one."></textarea>
+    </div>
+  </div>
+
+  <!-- ── EXPERIENCE ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('exp')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-briefcase sec-icon" aria-hidden="true"></i> Experience</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-exp" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-exp">
+      <p class="hint">Each position: what role, what you did, what happened, what it meant.</p>
+      <div id="exp-entries"></div>
+      <button class="add-btn" onclick="addARI('exp','exp-entries','Role · Company · Dates')">
+        <i class="ti ti-plus" aria-hidden="true"></i> Add position
+      </button>
+    </div>
+  </div>
+
+  <!-- ── VOLUNTEER ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('vol')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-heart sec-icon" aria-hidden="true"></i> Volunteer work</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-vol" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-vol">
+      <div id="vol-entries"></div>
+      <button class="add-btn" onclick="addARI('vol','vol-entries','Role · Organization · Dates')">
+        <i class="ti ti-plus" aria-hidden="true"></i> Add volunteer role
+      </button>
+    </div>
+  </div>
+
+  <!-- ── CERTIFICATES ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('cert')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-certificate sec-icon" aria-hidden="true"></i> Certificates</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-cert" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-cert">
+      <div id="cert-entries"></div>
+      <button class="add-btn" onclick="addARI('cert','cert-entries','Certificate name · Issuer · Year')">
+        <i class="ti ti-plus" aria-hidden="true"></i> Add certificate
+      </button>
+    </div>
+  </div>
+
+  <!-- ── AWARDS ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('awards')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-award sec-icon" aria-hidden="true"></i> Awards</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-awards" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-awards">
+      <div id="awards-entries"></div>
+      <button class="add-btn" onclick="addARI('awards','awards-entries','Award name · Org · Year')">
+        <i class="ti ti-plus" aria-hidden="true"></i> Add award
+      </button>
+    </div>
+  </div>
+
+  <!-- ── HOBBIES ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('hobbies')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-mood-happy sec-icon" aria-hidden="true"></i> Hobbies &amp; interests</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-hobbies" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-hobbies">
+      <p class="hint">One or two words. Tap Add or press Enter.</p>
+      <div class="simple-list" id="hobbies-tags"></div>
+      <div class="add-simple-row">
+        <input type="text" id="hobby-input" placeholder="e.g. Podcasts" onkeydown="if(event.key==='Enter'){addHobby();event.preventDefault();}">
+        <button onclick="addHobby()"><i class="ti ti-plus" aria-hidden="true"></i> Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTACT ── -->
+  <div class="section">
+    <div class="sec-header" onclick="toggle('contact')" aria-expanded="true">
+      <div class="sec-title"><i class="ti ti-mail sec-icon" aria-hidden="true"></i> Contact information</div>
+      <i class="ti ti-chevron-down chevron open" id="chev-contact" aria-hidden="true"></i>
+    </div>
+    <div class="sec-body" id="body-contact">
+      <label for="email">Email</label>
+      <input type="text" id="email" placeholder="you@email.com" autocomplete="email">
+      <label for="phone">Phone</label>
+      <input type="text" id="phone" placeholder="(555) 123-4567" autocomplete="tel">
+      <label for="location">Location</label>
+      <input type="text" id="location" placeholder="Milwaukee, WI">
+      <label for="links">Profile links <span style="font-weight:400;color:var(--hint)">(one per line: Label https://url)</span></label>
+      <textarea id="links" rows="4" placeholder="GitHub https://github.com/Reinheitsg-botTle&#10;LinkedIn https://linkedin.com/in/you&#10;Credly https://credly.com/users/you"></textarea>
+    </div>
+  </div>
+
+  <!-- ── GENERATE ── -->
+  <button class="generate-btn" id="gen-btn" onclick="generate()">
+    <div class="spinner" id="spinner"></div>
+    <i class="ti ti-file-download" id="gen-icon" aria-hidden="true"></i>
+    <span id="gen-label">Generate all 4 formats &amp; download</span>
   </button>
-</section>
-{% endblock %}
+  <div class="status" id="status" role="status" aria-live="polite"></div>
 
-{% block extra_js %}
+</div><!-- /.wrap -->
+
 <script>
-(function () {
-  "use strict";
+// ── State ──
+const counters = {};
+const hobbies  = [];
 
-  var SECTIONS = {
-    experience:   "Role · Company · Dates",
-    volunteer:    "Role · Organization · Dates",
-    certificates: "Certificate · Issuer · Date",
-    awards:       "Award · Issuer · Date"
-  };
+// ── Accordion toggle ──
+function toggle(id) {
+  const body = document.getElementById('body-' + id);
+  const chev = document.getElementById('chev-' + id);
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.classList.toggle('open', !open);
+}
 
-  function buildCard(placeholder) {
-    var card = document.createElement("div");
-    card.className = "rg-entry";
-    card.innerHTML =
-      '<div class="rg-entry-top">' +
-        '<input type="text" class="rg-entry-title" placeholder="' + placeholder + '">' +
-        '<button type="button" class="rg-remove-entry" aria-label="Remove">&times;</button>' +
-      '</div>' +
-      '<div class="rg-entry-field"><label>Action<input type="text" class="rg-entry-action" placeholder="What did you do?"></label></div>' +
-      '<div class="rg-entry-field"><label>Result<textarea class="rg-entry-result" placeholder="What came of it?"></textarea></label></div>' +
-      '<div class="rg-entry-field"><label>Impact<textarea class="rg-entry-impact" placeholder="Numbers, scale, who benefited"></textarea></label></div>';
-    card.querySelector(".rg-remove-entry").addEventListener("click", function () { card.remove(); });
-    return card;
-  }
+// ── ARI entry ──
+function addARI(ns, containerId, placeholder) {
+  const c   = document.getElementById(containerId);
+  const idx = (counters[ns] = (counters[ns] || 0) + 1);
+  const d   = document.createElement('div');
+  d.className = 'entry-card';
+  d.id = `${ns}-card-${idx}`;
+  d.innerHTML = `
+    <button class="remove-btn" onclick="this.parentElement.remove()" aria-label="Remove entry">×</button>
+    <div class="entry-label">${placeholder}</div>
+    <input type="text" id="${ns}-title-${idx}" placeholder="${placeholder}" style="margin-bottom:0">
+    <div class="ari-rows">
+      <div class="ari-row">
+        <span class="ari-badge badge-a">Action</span>
+        <textarea id="${ns}-a-${idx}" placeholder="What did you do?" rows="2"></textarea>
+      </div>
+      <div class="ari-row">
+        <span class="ari-badge badge-r">Result</span>
+        <textarea id="${ns}-r-${idx}" placeholder="What came of it?" rows="2"></textarea>
+      </div>
+      <div class="ari-row">
+        <span class="ari-badge badge-i">Impact</span>
+        <textarea id="${ns}-i-${idx}" placeholder="Numbers, scale, who benefited" rows="2"></textarea>
+      </div>
+    </div>`;
+  c.appendChild(d);
+}
 
-  Object.keys(SECTIONS).forEach(function (key) {
-    var list = document.getElementById("rg-list-" + key);
-    if (list) list.appendChild(buildCard(SECTIONS[key]));
-  });
+// ── Hobbies ──
+function addHobby() {
+  const inp = document.getElementById('hobby-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  hobbies.push(val);
+  renderHobbies();
+  inp.value = '';
+  inp.focus();
+}
 
-  document.querySelectorAll(".rg-add-entry").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var key = btn.getAttribute("data-target");
-      var list = document.getElementById("rg-list-" + key);
-      var card = buildCard(SECTIONS[key]);
-      list.appendChild(card);
-      card.querySelector(".rg-entry-title").focus();
-    });
-  });
+function removeHobby(i) {
+  hobbies.splice(i, 1);
+  renderHobbies();
+}
 
-  document.querySelectorAll(".rg-section-header").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var sec = btn.closest(".rg-section");
-      var collapsed = sec.classList.toggle("collapsed");
-      btn.setAttribute("aria-expanded", String(!collapsed));
-    });
-  });
+function renderHobbies() {
+  const list = document.getElementById('hobbies-tags');
+  list.innerHTML = hobbies.map((h, i) =>
+    `<div class="simple-tag">${escHtml(h)}<button onclick="removeHobby(${i})" aria-label="Remove ${escHtml(h)}">×</button></div>`
+  ).join('');
+}
 
-  function val(id) { var el = document.getElementById(id); return el ? el.value : ""; }
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  function collectAri(key) {
-    var out = [];
-    document.querySelectorAll("#rg-list-" + key + " .rg-entry").forEach(function (card) {
-      out.push({
-        title:  card.querySelector(".rg-entry-title").value.trim(),
-        action: card.querySelector(".rg-entry-action").value.trim(),
-        result: card.querySelector(".rg-entry-result").value.trim(),
-        impact: card.querySelector(".rg-entry-impact").value.trim()
-      });
-    });
-    return out;
-  }
-
-  function collectPayload() {
+// ── Gather form data ──
+function gatherARI(ns) {
+  return Array.from(document.querySelectorAll(`[id^="${ns}-card-"]`)).map(c => {
+    const idx = c.id.split('-').pop();
     return {
-      name:         val("field-name").trim(),
-      title:        val("field-title").trim(),
-      purpose:      val("field-purpose").trim(),
-      email:        val("field-email").trim(),
-      phone:        val("field-phone").trim(),
-      location:     val("field-location").trim(),
-      links:        val("field-links"),
-      experience:   collectAri("experience"),
-      volunteer:    collectAri("volunteer"),
-      certificates: collectAri("certificates"),
-      awards:       collectAri("awards"),
-      hobbies:      val("field-hobbies").split(",").map(function(s){ return s.trim(); }).filter(Boolean)
+      title:  (document.getElementById(`${ns}-title-${idx}`) || {}).value || '',
+      action: (document.getElementById(`${ns}-a-${idx}`)     || {}).value || '',
+      result: (document.getElementById(`${ns}-r-${idx}`)     || {}).value || '',
+      impact: (document.getElementById(`${ns}-i-${idx}`)     || {}).value || '',
     };
-  }
+  }).filter(e => e.title || e.action);
+}
 
-  var statusEl    = document.getElementById("rg-status");
-  var generateBtn = document.getElementById("generate-btn");
+function buildPayload() {
+  return {
+    name:         document.getElementById('name').value,
+    title:        document.getElementById('job-title').value,
+    purpose:      document.getElementById('purpose').value,
+    email:        document.getElementById('email').value,
+    phone:        document.getElementById('phone').value,
+    location:     document.getElementById('location').value,
+    links:        document.getElementById('links').value,
+    experience:   gatherARI('exp'),
+    volunteer:    gatherARI('vol'),
+    certificates: gatherARI('cert'),
+    awards:       gatherARI('awards'),
+    hobbies:      [...hobbies],
+  };
+}
 
-  function setStatus(msg, state) {
-    statusEl.textContent = msg || "";
-    state ? statusEl.setAttribute("data-state", state) : statusEl.removeAttribute("data-state");
-  }
+// ── Generate & download ──
+async function generate() {
+  const btn     = document.getElementById('gen-btn');
+  const spinner = document.getElementById('spinner');
+  const icon    = document.getElementById('gen-icon');
+  const label   = document.getElementById('gen-label');
+  const status  = document.getElementById('status');
 
-  generateBtn.addEventListener("click", function () {
-    var payload = collectPayload();
-    if (!payload.name) {
-      setStatus("Please enter your name before generating.", "error");
-      document.getElementById("field-name").focus();
-      return;
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  icon.style.display    = 'none';
+  label.textContent     = 'Generating…';
+  status.className      = 'status';
+  status.textContent    = 'Building your resume bundle…';
+
+  try {
+    const payload  = buildPayload();
+    const response = await fetch('/api/resume-generator', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: response.statusText }));
+      throw new Error(err.error || 'Server error');
     }
-    generateBtn.disabled = true;
-    setStatus("Generating your résumé bundle…");
 
-    fetch("/api/resume-generator", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
-    .then(function (res) {
-      if (!res.ok) return res.json().catch(function(){ return {}; }).then(function(e){ throw new Error(e.error || "Error generating résumé."); });
-      var disp = res.headers.get("Content-Disposition") || "";
-      var match = disp.match(/filename="?([^"]+)"?/);
-      var filename = match ? match[1] : "resume_bundle.zip";
-      return res.blob().then(function(blob){ return { blob: blob, filename: filename }; });
-    })
-    .then(function (result) {
-      var url = URL.createObjectURL(result.blob);
-      var a = document.createElement("a");
-      a.href = url; a.download = result.filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-      setStatus("Done — your download started.", "ok");
-    })
-    .catch(function (err) { setStatus(err.message || "Network error — please try again.", "error"); })
-    .finally(function () { generateBtn.disabled = false; });
-  });
+    // Trigger ZIP download
+    const blob     = await response.blob();
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    const name     = (payload.name || 'resume').replace(/\s+/g, '_');
+    a.href         = url;
+    a.download     = `${name}_resume_bundle.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
 
-})();
+    status.className   = 'status success';
+    status.textContent = '✓ Bundle downloaded — check your downloads folder for all 4 files.';
+    label.textContent  = 'Generate again';
+
+  } catch (err) {
+    status.className   = 'status error';
+    status.textContent = `Error: ${err.message}`;
+    label.textContent  = 'Try again';
+  } finally {
+    btn.disabled          = false;
+    spinner.style.display = 'none';
+    icon.style.display    = 'inline';
+  }
+}
 </script>
-{% endblock %}
-
+</body>
+</html>
