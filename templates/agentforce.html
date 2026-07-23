@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Agentforce | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page agentforce-page">
+  <p class="eyebrow">Operational agent catalog</p>
+  <h1>One base agent. Specialized skins.</h1>
+  <p class="lead">Download inspectable Python packages, combine skins with the shared runtime, and connect only the tools you approve.</p>
+  {% if request.args.get("checkout") %}<p class="status-banner status-attention">Stripe checkout requires the corresponding Render environment variables. Downloads remain available below.</p>{% endif %}
+  <div class="agent-architecture"><strong>Polka Base Agent</strong><span>+</span><strong>Selected skin</strong><span>&rarr;</span><strong>Your approved tools</strong></div>
+  <div class="agent-product-grid">
+  {% for slug, product in products.items() %}
+    <article class="agent-product" id="{{ slug }}">
+      <p class="agent-price">${{ product.price }} <small>one-time license</small></p>
+      <h2>{{ product.name }}</h2>
+      <p>{{ product.description }}</p>
+      <ul>{% for skill in product.skills %}<li>{{ skill }}</li>{% endfor %}</ul>
+      <div class="agent-actions">
+        <a class="cta-button" href="{{ url_for('agent_download', slug=slug) }}">Click to download</a>
+        <form method="post" action="{{ url_for('agent_checkout', slug=slug) }}"><button class="text-link" type="submit">Buy with Stripe &rarr;</button></form>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+  <section class="agent-operations">
+    <h2>Housekeeping operations</h2>
+    <p>The daily workflow checks public routes, records audit evidence, and requests safe cleanup of temporary files older than seven days. It never rewrites application code automatically.</p>
+    <a class="text-link" href="{{ url_for('agent_page') }}">View operational evidence &rarr;</a>
+  </section>
+</section>
+{% endblock %}

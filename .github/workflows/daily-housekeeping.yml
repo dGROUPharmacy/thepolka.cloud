@@ -1,0 +1,21 @@
+name: Daily housekeeping agent
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  housekeeping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run safe cleanup and record audit
+        run: |
+          curl --fail --retry 3 --retry-delay 10 --silent --show-error --request POST https://thepolka.cloud/api/housekeeping/run
+      - name: Verify Agentforce catalog and downloads
+        run: |
+          curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/agentforce
+          curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/agentforce/download/base

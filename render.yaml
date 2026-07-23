@@ -14,6 +14,22 @@ services:
         value: /var/data
       - key: SECRET_KEY
         generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_BASE
+        sync: false
+      - key: STRIPE_PRICE_SPELLCHECK
+        sync: false
+      - key: STRIPE_PRICE_CYBERSECURITY
+        sync: false
+      - key: STRIPE_PRICE_ADVERTISING
+        sync: false
+      - key: STRIPE_PRICE_SALES
+        sync: false
+      - key: STRIPE_PRICE_SOCIAL
+        sync: false
+      - key: STRIPE_PRICE_HOUSEKEEPING
+        sync: false
     disk:
       name: thepolka-data
       mountPath: /var/data

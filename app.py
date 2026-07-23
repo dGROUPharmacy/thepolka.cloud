@@ -42,6 +42,16 @@ ECOSYSTEM_PAGES = {
     "store": ("Boutique", "Products, support, and ways to sustain the ecosystem."),
 }
 
+AGENT_PRODUCTS = {
+    "base": {"name": "Polka Base Agent", "price": 29, "description": "Core agent runtime, configuration, logging, health checks, and skin loader.", "skills": ["runtime", "logging", "health", "skin-loader"]},
+    "spellcheck": {"name": "Editorial / Spell-Check Skin", "price": 39, "description": "Proofreading, spelling, clarity, tone, and consistency review.", "skills": ["spelling", "grammar", "clarity", "tone"]},
+    "cybersecurity": {"name": "Cybersecurity Skin", "price": 79, "description": "Defensive configuration review, security headers, dependency checks, and evidence reports.", "skills": ["headers", "dependencies", "configuration", "reporting"]},
+    "advertising": {"name": "Advertising Analytics Skin", "price": 59, "description": "Impressions, click volume, redirects, CTR, and campaign-value reporting.", "skills": ["impressions", "clicks", "redirects", "ctr"]},
+    "sales": {"name": "Sales Agent Skin", "price": 69, "description": "Lead qualification, offer presentation, checkout routing, and pipeline follow-up.", "skills": ["leads", "offers", "checkout", "pipeline"]},
+    "social": {"name": "Social Media Skin", "price": 49, "description": "Channel-ready drafts, calendars, reuse suggestions, and engagement review.", "skills": ["drafting", "calendar", "repurposing", "engagement"]},
+    "housekeeping": {"name": "Housekeeping Agent Skin", "price": 89, "description": "Daily audits, safe cache/temp cleanup, route checks, and operational evidence.", "skills": ["daily-audit", "safe-cleanup", "route-checks", "evidence"]},
+}
+
 
 def database_connection():
     connection = sqlite3.connect(DATA_DIR / "marketplace.db")
@@ -108,6 +118,33 @@ def forecast_discussion_day():
     return datetime.now(ZoneInfo("America/Denver")).date().isoformat()
 
 
+def agent_package(slug):
+    product = AGENT_PRODUCTS[slug]
+    manifest = {
+        "schema": "thepolka.agent/v1",
+        "slug": slug,
+        "name": product["name"],
+        "base": "polka-base-agent",
+        "price_usd": product["price"],
+        "skills": product["skills"],
+        "entrypoint": "agent.py",
+    }
+    agent_source = f'''"""ThePolka.Cloud {product["name"]} package."""
+import json
+from pathlib import Path
+
+MANIFEST = {manifest!r}
+
+def run(payload=None):
+    """Return an inspectable execution record; connect approved tools in config.json."""
+    return {{"agent": MANIFEST["slug"], "status": "ready", "payload": payload or {{}}, "skills": MANIFEST["skills"]}}
+
+if __name__ == "__main__":
+    print(json.dumps(run(), indent=2))
+'''
+    return manifest, agent_source
+
+
 def recent_audits():
     with audit_connection() as connection:
         rows = connection.execute(
@@ -118,7 +155,7 @@ def recent_audits():
 
 def audit_snapshot(record=False):
     routes = {rule.rule for rule in app.url_map.iter_rules()}
-    required = ["/", "/agent", "/ai-marketplace", "/ai-warehouse", "/health"]
+    required = ["/", "/agent", "/agentforce", "/ai-marketplace", "/ai-warehouse", "/health"]
     checks = [
         {"name": "Core application routes", "ok": all(route in routes for route in required)},
         {"name": "Production debug mode disabled", "ok": not app.debug},
@@ -145,8 +182,11 @@ def audit_snapshot(record=False):
 
 @app.get("/")
 def home():
-    if request.host.split(":", 1)[0].lower() == "warehouse.thepolka.cloud":
+    hostname = request.host.split(":", 1)[0].lower()
+    if hostname == "warehouse.thepolka.cloud":
         return ai_warehouse()
+    if hostname == "agentforce.thepolka.cloud":
+        return agentforce_page()
     return render_template("index.html", active="home")
 
 
@@ -244,6 +284,64 @@ def mark_mail_read_api(message_id):
 def agent_page():
     audit = audit_snapshot(record=True)
     return render_template("agent.html", active="agent", audit=audit, history=recent_audits())
+
+
+@app.get("/agentforce")
+def agentforce_page():
+    return render_template("agentforce.html", active="agentforce", products=AGENT_PRODUCTS)
+
+
+@app.get("/agentforce/download/<slug>")
+def agent_download(slug):
+    if slug not in AGENT_PRODUCTS:
+        return not_found(None)
+    manifest, source = agent_package(slug)
+    bundle = io.BytesIO()
+    with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("manifest.json", json.dumps(manifest, indent=2))
+        archive.writestr("agent.py", source)
+        archive.writestr("config.example.json", json.dumps({"enabled": True, "schedule": "manual", "tools": []}, indent=2))
+        archive.writestr("README.md", f"# {manifest['name']}\n\nLoad this skin with the Polka Base Agent. Review permissions before connecting tools.\n")
+    bundle.seek(0)
+    return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name=f"thepolka-{slug}-agent.zip")
+
+
+@app.post("/agentforce/checkout/<slug>")
+def agent_checkout(slug):
+    if slug not in AGENT_PRODUCTS:
+        return not_found(None)
+    secret = os.environ.get("STRIPE_SECRET_KEY", "")
+    price_id = os.environ.get(f"STRIPE_PRICE_{slug.upper()}", "")
+    if not secret or not price_id:
+        return redirect(url_for("agentforce_page", checkout="configuration-required") + f"#{slug}")
+    body = urlencode({
+        "mode": "payment",
+        "line_items[0][price]": price_id,
+        "line_items[0][quantity]": 1,
+        "success_url": request.url_root.rstrip("/") + url_for("agentforce_page") + f"?purchased={slug}#{slug}",
+        "cancel_url": request.url_root.rstrip("/") + url_for("agentforce_page") + f"?cancelled={slug}#{slug}",
+        "metadata[agent_slug]": slug,
+    }).encode()
+    stripe_request = Request("https://api.stripe.com/v1/checkout/sessions", data=body, headers={"Authorization": f"Bearer {secret}", "Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urlopen(stripe_request, timeout=20) as response:
+            session = json.load(response)
+        return redirect(session["url"], code=303)
+    except Exception:
+        app.logger.exception("Stripe Checkout creation failed")
+        return redirect(url_for("agentforce_page", checkout="failed") + f"#{slug}")
+
+
+@app.post("/api/housekeeping/run")
+def housekeeping_run():
+    removed = []
+    cutoff = datetime.now(timezone.utc).timestamp() - (7 * 86400)
+    for path in DATA_DIR.glob("*.tmp"):
+        if path.is_file() and path.stat().st_mtime < cutoff:
+            path.unlink()
+            removed.append(path.name)
+    snapshot = audit_snapshot(record=True)
+    return jsonify(status="complete", removed=removed, audit=snapshot)
 
 
 @app.get("/api/audit")
