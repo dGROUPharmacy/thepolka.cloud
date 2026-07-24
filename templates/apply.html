@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block title %}Apply | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page apply-page">
+  <p class="eyebrow">One-stop independent work directory</p>
+  <h1>Find the next place to earn.</h1>
+  <p class="lead">A practical starting point for AI evaluation, coding, research, and data-work platforms. Compare the path in, choose one next action, and always confirm pay and terms on the platform itself.</p>
+  <div class="apply-toolbar"><label for="platform-filter">Filter platforms</label><input id="platform-filter" type="search" placeholder="Try coding, evaluation, or sign up"><span id="platform-count">{{ platforms|length }} options</span></div>
+  <div class="apply-grid" id="platform-grid">
+    {% for platform in platforms %}
+    <article class="apply-card" data-search="{{ platform.name }} {{ platform.category }} {{ platform.stage }}">
+      <div><span class="status-pill">{{ platform.stage }}</span><span class="apply-category">{{ platform.category }}</span></div>
+      <h2>{{ platform.name }}</h2><p>{{ platform.note }}</p>
+      <a class="cta-button" href="{{ platform.url }}" target="_blank" rel="noopener sponsored">{{ platform.action }} &rarr;</a>
+    </article>
+    {% endfor %}
+  </div>
+  <aside class="sponsor-card"><p class="eyebrow">Founding sponsor opening</p><h2>Reach people actively choosing their next work platform.</h2><p>One clearly labeled sponsor placement is available. Sponsorship never changes rankings, hides requirements, or implies endorsement.</p><a class="text-link" href="mailto:sales@thepolka.cloud?subject=Apply%20Founding%20Sponsor">Ask about the founding placement &rarr;</a></aside>
+  <p class="small-note apply-disclosure">ThePolka.Cloud is an independent directory and is not affiliated with the listed platforms. Availability, contractor status, assessments, and payment timing can change. Sponsored links are labeled.</p>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/apply.js') }}" defer></script>{% endblock %}
