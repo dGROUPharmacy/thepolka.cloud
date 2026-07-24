@@ -1,54 +1,76 @@
 {% extends "layout.html" %}
-
-{% block title %}FAIRE OS — your local AI, everywhere | ThePolka.Cloud{% endblock %}
-<meta name="description" content="Faire: a floating AI companion for thepolka.cloud.">
-<link rel="icon" href="/static/img/faire-icon.svg">
-
+{% block title %}FAIRE OS | ThePolka.Cloud{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="/static/css/faire.css">
 {% endblock %}
-
 {% block content %}
 <main class="faire-page">
   <p class="faire-page__eyebrow">thepolka.cloud presents</p>
   <header class="faire-page__header">
-    <h1>Faire</h1>
-    <p>A small glowing presence that floats in the corner of every page — click her and she's ready to talk. No new tab, no separate app, just a question away.</p>
+    <h1>Faire OS</h1>
+    <p>A pocket operating layer for your work: ask, capture, switch context, and keep moving without opening a maze of apps.</p>
   </header>
-  <section class="faire-page__grid">
-    <div class="faire-card">
-      <h3>Always there</h3>
-      <p>The same orb follows you across every page of thepolka.cloud — one consistent companion, not a different chatbot per site.</p>
+  <section class="faire-phone" aria-label="Interactive Faire mobile operating system preview">
+    <div class="faire-phone__top"><span>9:41</span><strong>faire</strong><button id="faire-invert" type="button" aria-pressed="false">Invert</button></div>
+    <div class="faire-phone__orb" aria-hidden="true"></div>
+    <p class="faire-phone__hello">Good morning, Andy.</p>
+    <p class="faire-phone__prompt">What should we move forward?</p>
+    <div class="faire-phone__actions">
+      <button type="button" data-faire-action="Capture a thought">Capture</button>
+      <button type="button" data-faire-action="Plan the next move">Plan</button>
+      <button type="button" data-faire-action="Open the work queue">Work</button>
+      <button type="button" data-faire-action="Check system health">Health</button>
     </div>
-    <div class="faire-card">
-      <h3>Local-first</h3>
-      <p>Faire is designed to run on infrastructure you control, with the option to fall back to a hosted model when you want more power.</p>
-    
-    </div>
-    <div class="faire-card">
-      <h3>Lightweight</h3>
-      <p>No frameworks, no build step for the widget itself — just a small script and stylesheet any page can include.</p>
-    </div>
-    <div class="faire-card">
-      <h3>Yours to extend</h3>
-      <p>Swap the backend, change her voice, give her memory — Faire is a shell you grow into, not a fixed product.</p>
-    </div>
+    <div id="faire-phone-status" class="faire-phone__status" role="status">Ready for one clear action.</div>
+    <nav class="faire-phone__dock" aria-label="Faire OS preview navigation"><span>Home</span><span>Flow</span><span>Memory</span></nav>
   </section>
-
-  <div class="faire-page__cta">
-    <strong>Try her now</strong> — click the glowing orb in the bottom right corner of this page.
-  </div>
+  <section class="faire-page__grid">
+    <div class="faire-card"><h3>One command surface</h3><p>The same companion follows your work across ThePolka.Cloud: one place to ask, route, remember, and resume.</p></div>
+    <div class="faire-card"><h3>Local-first</h3><p>Run on infrastructure you control, with an optional hosted model when a task needs more power.</p></div>
+    <div class="faire-card"><h3>Action, not chat alone</h3><p>Capture a thought, open the work queue, check system health, or hand a focused job to an approved agent skin.</p></div>
+    <div class="faire-card"><h3>Yours to extend</h3><p>Swap the backend, change the voice, add approved memory, or install an Agentforce skin. Faire grows with the operator.</p></div>
+  </section>
+  <section class="faire-purchase" id="purchase">
+    <p class="faire-page__eyebrow">One purchase. Your machine. Your model.</p>
+    <div class="faire-purchase__price">$1,000 <small>one time</small></div>
+    <h2>Faire Desktop — Local AI Build</h2>
+    <p>We configure a downloadable desktop build of Faire for one supported computer, designed to keep core chat and workflow functions local after installation.</p>
+    <ul>
+      <li>Desktop application build and guided installation package</li>
+      <li>Anaconda-compatible local Python environment option</li>
+      <li>Support for a compatible customer-supplied or properly licensed local model</li>
+      <li>Offline chat, local files, and basic workflow actions where the selected model and hardware support them</li>
+      <li>No recurring Faire platform subscription</li>
+    </ul>
+    <p class="faire-purchase__note">Model weights, third-party licenses, hardware, cloud services, and future custom development are not included. Performance depends on the computer and selected model.</p>
+    {% if request.args.get("checkout") %}<p class="faire-purchase__status">Checkout is being configured. Contact sales@thepolka.cloud to reserve the first build.</p>{% endif %}
+    {% if request.args.get("purchased") %}<p class="faire-purchase__status">Purchase received. We will use your Stripe contact details to begin the desktop-build intake.</p>{% endif %}
+    <form method="post" action="{{ url_for('faire_checkout') }}"><button class="faire-purchase__button" type="submit">Purchase Faire Desktop — $1,000</button></form>
+    <a class="faire-purchase__contact" href="mailto:sales@thepolka.cloud?subject=Faire%20Desktop%20Local%20AI%20Build">Ask a compatibility question first</a>
+  </section>
+  <div class="faire-page__cta"><strong>Try the system preview</strong> above, then click the glowing Faire orb for the live conversation layer.</div>
 </main>
 {% endblock %}
-
 {% block extra_js %}
-  <!-- ===================== FAIRE WIDGET (copy this block to any page) ===================== -->
 <link rel="stylesheet" href="/static/css/faire-widget.css">
 <div id="faire-root"></div>
 <script src="/static/js/faire-widget.js" defer></script>
 <script>
   window.addEventListener('DOMContentLoaded', () => {
     Faire.init({ apiBase: '/api', title: 'Faire', subtitle: 'your local AI, everywhere' });
+    const phone = document.querySelector('.faire-phone');
+    const invert = document.getElementById('faire-invert');
+    const status = document.getElementById('faire-phone-status');
+    invert.addEventListener('click', () => {
+      const active = phone.classList.toggle('is-inverted');
+      invert.setAttribute('aria-pressed', String(active));
+      invert.textContent = active ? 'Restore' : 'Invert';
+    });
+    document.querySelectorAll('[data-faire-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        status.textContent = button.dataset.faireAction + ' - queued in Faire OS.';
+      });
+    });
   });
 </script>
 {% endblock %}
