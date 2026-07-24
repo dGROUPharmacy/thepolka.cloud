@@ -48,6 +48,14 @@
     <form method="post" action="{{ url_for('faire_checkout') }}"><button class="faire-purchase__button" type="submit">Purchase Faire Desktop — $1,000</button></form>
     <a class="faire-purchase__contact" href="mailto:sales@thepolka.cloud?subject=Faire%20Desktop%20Local%20AI%20Build">Ask a compatibility question first</a>
   </section>
+  <section class="faire-trial" id="windows-trial">
+    <p class="faire-page__eyebrow">Windows trial · local chat</p>
+    <h2>Try Faire with an offline model.</h2>
+    <p>Download the inspectable Windows shell, connect it to Ollama on your computer, and chat locally. An internet connection is required only to install Ollama and download a model the first time; after that, prompts and responses stay on the machine.</p>
+    <div class="faire-trial__steps"><span><b>1</b> Install Ollama</span><span><b>2</b> Pull a model</span><span><b>3</b> Launch Faire</span></div>
+    <a class="faire-purchase__button faire-trial__download" href="{{ url_for('faire_trial_download') }}">Download Faire Windows trial</a>
+    <p class="faire-purchase__note">This trial is a desktop chat shell, not a replacement operating system. It requires Windows PowerShell, Ollama, and enough memory for the model you select.</p>
+  </section>
   <div class="faire-page__cta"><strong>Try the system preview</strong> above, then click the glowing Faire orb for the live conversation layer.</div>
 </main>
 {% endblock %}

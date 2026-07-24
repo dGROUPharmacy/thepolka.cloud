@@ -3,7 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="ThePolka.Cloud software, education, cloud services, and professional tools.">
+  <meta name="description" content="{% block description %}ThePolka.Cloud software, calculators, weather, education, AI systems, and professional tools.{% endblock %}">
+  <link rel="canonical" href="https://thepolka.cloud{{ request.path }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ThePolka.Cloud">
+  <meta property="og:title" content="{% block og_title %}ThePolka.Cloud{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Useful tools, weather, software builds, and practical learning environments.{% endblock %}">
+  <meta property="og:url" content="https://thepolka.cloud{{ request.path }}">
+  <meta property="og:image" content="https://thepolka.cloud{{ url_for('static', filename='img/thepolka.cloud.png') }}">
   <title>{% block title %}ThePolka.Cloud{% endblock %}</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/thepolka.cloud.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
@@ -32,22 +39,33 @@
       </div>
 
       <nav class="sidebar-nav" aria-label="Global navigation">
-        <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
-        <a href="{{ url_for('ecosystem_page', page='mail') }}" class="nav-link{% if active == 'mail' %} active{% endif %}">Mail</a>
-        <a href="{{ url_for('ecosystem_page', page='resume') }}" class="nav-link{% if active == 'resume' %} active{% endif %}">Résumé Generator</a>
-        <a href="{{ url_for('forecast_page') }}" class="nav-link{% if active == 'forecast' %} active{% endif %}">Forecast</a>
-        <a href="{{ url_for('apply_page') }}" class="nav-link{% if active == 'apply' %} active{% endif %}">Apply</a>
-        <a href="{{ url_for('mylm_page') }}" class="nav-link{% if active == 'mylm' %} active{% endif %}">MyLM</a>
-        <a href="{{ url_for('ilaw_page') }}" class="nav-link{% if active == 'ilaw' %} active{% endif %}">iLAW</a>
-        <a href="{{ url_for('java_page') }}" class="nav-link{% if active == 'java' %} active{% endif %}">Java → Apex</a>
-        <a href="{{ url_for('ecosystem_page', page='faire') }}" class="nav-link{% if active == 'faire' %} active{% endif %}">FAIRE OS</a>
-        <a href="{{ url_for('ecosystem_page', page='cad') }}" class="nav-link{% if active == 'cad' %} active{% endif %}">CAD Experience</a>
-        <a href="{{ url_for('ecosystem_page', page='directory') }}" class="nav-link{% if active == 'directory' %} active{% endif %}">Navigate</a>
-        <a href="https://store.thepolka.cloud/#support" class="nav-link">Boutique</a>
-        <a href="{{ url_for('agent_page') }}" class="nav-link{% if active == 'agent' %} active{% endif %}">Agent</a>
-        <a href="{{ url_for('agentforce_page') }}" class="nav-link{% if active == 'agentforce' %} active{% endif %}">Agentforce</a>
-        <a href="{{ url_for('ai_marketplace') }}" class="nav-link{% if active == 'marketplace' %} active{% endif %}">AI Reviews</a>
-        <a href="{{ url_for('ai_warehouse') }}" class="nav-link{% if active == 'warehouse' %} active{% endif %}">AI Content Warehouse</a>
+        <div class="nav-section"><span class="nav-section-label">Use</span>
+          <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
+          <a href="{{ url_for('forecast_page') }}" class="nav-link{% if active == 'forecast' %} active{% endif %}">Forecast</a>
+          <a href="{{ url_for('tools_page') }}" class="nav-link{% if active == 'tools' %} active{% endif %}">Business Tools</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Build</span>
+          <a href="{{ url_for('ecosystem_page', page='resume') }}" class="nav-link{% if active == 'resume' %} active{% endif %}">Résumé Generator</a>
+          <a href="{{ url_for('java_page') }}" class="nav-link{% if active == 'java' %} active{% endif %}">Java → Apex</a>
+          <a href="{{ url_for('ecosystem_page', page='cad') }}" class="nav-link{% if active == 'cad' %} active{% endif %}">CAD Experience</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Work & learn</span>
+          <a href="{{ url_for('apply_page') }}" class="nav-link{% if active == 'apply' %} active{% endif %}">Apply</a>
+          <a href="{{ url_for('ilaw_page') }}" class="nav-link{% if active == 'ilaw' %} active{% endif %}">iLAW</a>
+          <a href="{{ url_for('mylm_page') }}" class="nav-link{% if active == 'mylm' %} active{% endif %}">MyLM</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Systems</span>
+          <a href="{{ url_for('ecosystem_page', page='faire') }}" class="nav-link{% if active == 'faire' %} active{% endif %}">FAIRE OS</a>
+          <a href="{{ url_for('agent_page') }}" class="nav-link{% if active == 'agent' %} active{% endif %}">Agent Evidence</a>
+          <a href="{{ url_for('agentforce_page') }}" class="nav-link{% if active == 'agentforce' %} active{% endif %}">Agentforce</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Explore</span>
+          <a href="{{ url_for('ecosystem_page', page='mail') }}" class="nav-link{% if active == 'mail' %} active{% endif %}">Mail</a>
+          <a href="{{ url_for('ecosystem_page', page='directory') }}" class="nav-link{% if active == 'directory' %} active{% endif %}">Navigate</a>
+          <a href="{{ url_for('ai_marketplace') }}" class="nav-link{% if active == 'marketplace' %} active{% endif %}">AI Reviews</a>
+          <a href="{{ url_for('ai_warehouse') }}" class="nav-link{% if active == 'warehouse' %} active{% endif %}">AI Warehouse</a>
+          <a href="https://store.thepolka.cloud/#support" class="nav-link">Boutique</a>
+        </div>
       </nav>
 
       <img src="{{ url_for('static', filename='img/thepolka.cloud.png') }}" alt="ThePolka.Cloud" loading="lazy">

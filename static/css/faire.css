@@ -48,3 +48,4 @@ body{
   color:var(--muted);
 }
 .faire-page__cta strong{ color:var(--fg); }
+.faire-trial{margin:3rem 0;padding:clamp(1.5rem,4vw,3rem);border:1px solid #6fcdbc;border-radius:28px;background:linear-gradient(135deg,#092238,#123b43);color:#eefcf9}.faire-trial h2{margin:.2rem 0;font-size:clamp(2rem,5vw,4rem)}.faire-trial>p:not(.faire-page__eyebrow){max-width:760px;line-height:1.6}.faire-trial__steps{display:flex;gap:.7rem;flex-wrap:wrap;margin:1.3rem 0}.faire-trial__steps span{padding:.7rem 1rem;border:1px solid rgba(255,255,255,.22);border-radius:999px}.faire-trial__steps b{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;margin-right:.4rem;border-radius:50%;background:#9bf0dd;color:#092238}.faire-trial__download{display:inline-block;margin:.5rem 0;text-decoration:none}.faire-trial .faire-purchase__note{color:#b8d6d2}

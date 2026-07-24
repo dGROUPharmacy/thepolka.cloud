@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from resume_generator.normalize import normalize
@@ -32,6 +32,16 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{DATA_DIR / 'users.db'}",
 )
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+
+@app.after_request
+def security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
+
 
 ECOSYSTEM_PAGES = {
     "mail": ("Mail", "Communications, templates, and mail-system work."),
@@ -195,7 +205,7 @@ def recent_audits():
 
 def audit_snapshot(record=False):
     routes = {rule.rule for rule in app.url_map.iter_rules()}
-    required = ["/", "/agent", "/agentforce", "/java", "/ai-marketplace", "/ai-warehouse", "/health"]
+    required = ["/", "/tools", "/faire/trial/download", "/agent", "/agentforce", "/java", "/ai-marketplace", "/ai-warehouse", "/health"]
     checks = [
         {"name": "Core application routes", "ok": all(route in routes for route in required)},
         {"name": "Production debug mode disabled", "ok": not app.debug},
@@ -256,6 +266,23 @@ def ilaw_page():
 @app.get("/java")
 def java_page():
     return render_template("java.html", active="java")
+
+
+@app.get("/tools")
+def tools_page():
+    return render_template("tools.html", active="tools")
+
+
+@app.get("/faire/trial/download")
+def faire_trial_download():
+    bundle = io.BytesIO()
+    trial_directory = BASE_DIR / "faire_trial"
+    with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(trial_directory.iterdir()):
+            if path.is_file():
+                archive.write(path, f"Faire-Windows-Trial/{path.name}")
+    bundle.seek(0)
+    return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name="faire-windows-offline-trial.zip")
 
 
 @app.post("/ilaw/register")
@@ -342,7 +369,7 @@ def ecosystem_page(page):
             except Exception as exc:
                 app.logger.exception("CAD asset generation failed")
                 cad_error = str(exc)
-        return render_template("cad.html", cad_error=cad_error)
+        return render_template("cad.html", active="cad", cad_error=cad_error)
     if page == "faire":
         return render_template("faire.html", active="faire")
     if page == "directory":
@@ -572,6 +599,22 @@ def ai_warehouse():
 @app.get("/health")
 def health():
     return jsonify(status="ok", service="thepolka.cloud"), 200
+
+
+@app.get("/robots.txt")
+def robots():
+    return Response("User-agent: *\nAllow: /\nSitemap: https://thepolka.cloud/sitemap.xml\n", mimetype="text/plain")
+
+
+@app.get("/sitemap.xml")
+def sitemap():
+    paths = [
+        "/", "/forecast", "/tools", "/apply", "/mylm", "/ilaw", "/java",
+        "/ecosystem/resume", "/ecosystem/cad", "/ecosystem/faire",
+        "/agent", "/agentforce", "/ai-marketplace", "/ai-warehouse", "/privacy",
+    ]
+    urls = "".join(f"<url><loc>https://thepolka.cloud{path}</loc></url>" for path in paths)
+    return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>', mimetype="application/xml")
 
 
 @app.get("/forecast")

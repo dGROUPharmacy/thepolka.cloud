@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block title %}Free Business Calculators | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="tools-page">
+  <header class="tools-hero">
+    <p class="eyebrow">Fast, private, useful</p>
+    <h1>Business decisions, without a spreadsheet safari.</h1>
+    <p class="lead">Four focused calculators for pricing work, evaluating AI projects, measuring advertising, and estimating cloud costs. Calculations stay in your browser.</p>
+  </header>
+
+  <nav class="tools-jump" aria-label="Calculator navigation">
+    <a href="#rate">Freelance rate</a><a href="#roi">AI project ROI</a><a href="#ads">Advertising</a><a href="#cloud">Cloud cost</a>
+  </nav>
+
+  <div class="tools-grid">
+    <article class="tool-card" id="rate" data-tool="rate">
+      <p class="eyebrow">Pricing</p><h2>Freelance rate calculator</h2>
+      <label>Annual income goal <span>$</span><input name="income" type="number" min="0" value="80000"></label>
+      <label>Annual business expenses <span>$</span><input name="expenses" type="number" min="0" value="12000"></label>
+      <label>Billable hours per week <input name="hours" type="number" min="1" max="80" value="25"></label>
+      <label>Working weeks per year <input name="weeks" type="number" min="1" max="52" value="46"></label>
+      <output><small>Sustainable hourly rate</small><strong data-result>$0</strong><span data-detail></span></output>
+    </article>
+
+    <article class="tool-card" id="roi" data-tool="roi">
+      <p class="eyebrow">Automation</p><h2>AI project ROI calculator</h2>
+      <label>Setup cost <span>$</span><input name="setup" type="number" min="0" value="6000"></label>
+      <label>Monthly operating cost <span>$</span><input name="monthly" type="number" min="0" value="500"></label>
+      <label>Hours saved each month <input name="saved" type="number" min="0" value="45"></label>
+      <label>Value per saved hour <span>$</span><input name="value" type="number" min="0" value="65"></label>
+      <output><small>First-year return</small><strong data-result>0%</strong><span data-detail></span></output>
+    </article>
+
+    <article class="tool-card" id="ads" data-tool="ads">
+      <p class="eyebrow">Audience</p><h2>Advertising performance</h2>
+      <label>Impressions <input name="impressions" type="number" min="0" value="25000"></label>
+      <label>Clicks <input name="clicks" type="number" min="0" value="625"></label>
+      <label>Advertising spend <span>$</span><input name="spend" type="number" min="0" value="750"></label>
+      <label>Conversions <input name="conversions" type="number" min="0" value="25"></label>
+      <output><small>Click-through rate</small><strong data-result>0%</strong><span data-detail></span></output>
+    </article>
+
+    <article class="tool-card" id="cloud" data-tool="cloud">
+      <p class="eyebrow">Infrastructure</p><h2>Simple cloud cost estimator</h2>
+      <label>Compute per month <span>$</span><input name="compute" type="number" min="0" value="25"></label>
+      <label>Database per month <span>$</span><input name="database" type="number" min="0" value="15"></label>
+      <label>Storage per month <span>$</span><input name="storage" type="number" min="0" value="5"></label>
+      <label>Other services per month <span>$</span><input name="other" type="number" min="0" value="10"></label>
+      <output><small>Estimated annual cost</small><strong data-result>$0</strong><span data-detail></span></output>
+    </article>
+  </div>
+
+  <section class="tools-guidance">
+    <h2>Use the number as a starting point.</h2>
+    <p>These estimates are educational planning aids, not financial, tax, employment, investment, or procurement advice. Real costs and outcomes depend on contracts, taxes, utilization, security, support, and implementation quality.</p>
+  </section>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/business-tools.js') }}"></script>{% endblock %}

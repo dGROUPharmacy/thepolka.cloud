@@ -1,29 +1,21 @@
 {% extends "layout.html" %}
-
 {% block title %}Welcome | ThePolka.Cloud{% endblock %}
-
+{% block description %}ThePolka.Cloud offers local weather, free business calculators, résumé tools, practical AI systems, Java-to-Apex learning, and downloadable software.{% endblock %}
+{% block og_title %}ThePolka.Cloud — tools that show up{% endblock %}
 {% block content %}
 <section class="hero" id="welcome">
-  <h1>Welcome to ThePolka.Cloud</h1>
-  <p>
-    Browse software builds, educational material, cloud services, and
-    professional tools created across the ThePolka.Cloud ecosystem.
-  </p>
-  <p class="flagship-link">
-    Current flagship project:
-    <a href="{{ url_for('ecosystem_page', page='resume') }}">Résumé Generator</a>
-  </p>
-  <p class="flagship-link">
-    Curated AI content:
-    <a href="https://warehouse.thepolka.cloud/#seeitagain">warehouse.thepolka.cloud</a>
-  </p>
-  <div class="hero-image">
-    <img
-      src="{{ url_for('static', filename='img/thepolka.cloud.png') }}"
-      alt="ThePolka.Cloud"
-      class="hero-graphic"
-      loading="eager"
-    >
-  </div>
+  <p class="eyebrow">Useful by design</p>
+  <h1>Tools that show up.</h1>
+  <p>Check local weather, make a business decision, build a résumé, inspect a CAD model, learn Java and Apex, or run a local AI shell—without entering a maze of services.</p>
+  <div class="home-actions"><a class="cta-button" href="{{ url_for('tools_page') }}">Open free calculators</a><a class="text-link" href="{{ url_for('forecast_page') }}">Check the forecast →</a></div>
+  <div class="hero-image"><img src="{{ url_for('static', filename='img/thepolka.cloud.png') }}" alt="ThePolka.Cloud" class="hero-graphic" loading="eager"></div>
+</section>
+<section class="home-products" aria-label="Featured ThePolka.Cloud tools">
+  <a href="{{ url_for('forecast_page') }}"><span>Daily utility</span><h2>Forecast + discussion</h2><p>Local National Weather Service data, GOES imagery, lunar phase, and a daily public weather conversation.</p></a>
+  <a href="{{ url_for('tools_page') }}"><span>Business utility</span><h2>Decision calculators</h2><p>Estimate rates, AI-project ROI, advertising performance, and simple annual cloud costs.</p></a>
+  <a href="{{ url_for('ecosystem_page', page='cad') }}"><span>Build lab</span><h2>Interactive CAD</h2><p>Orbit the parametric phone holder, inspect its pure-Python generator, and download production-ready formats.</p></a>
+  <a href="{{ url_for('java_page') }}"><span>Code lab</span><h2>Java → Apex</h2><p>Translate Java instincts into Apex patterns through a safe teaching subset and downloadable source.</p></a>
+  <a href="{{ url_for('ecosystem_page', page='resume') }}"><span>Career utility</span><h2>Résumé Generator</h2><p>Turn structured information into consistent HTML, Markdown, DOCX, and PDF résumé formats.</p></a>
+  <a href="{{ url_for('ecosystem_page', page='faire') }}#windows-trial"><span>Local AI</span><h2>Faire Windows trial</h2><p>Download an inspectable desktop chat shell for an Ollama model running on your own computer.</p></a>
 </section>
 {% endblock %}
