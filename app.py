@@ -228,6 +228,11 @@ def mylm_page():
     return render_template("mylm.html", active="mylm")
 
 
+@app.get("/privacy")
+def privacy_page():
+    return render_template("privacy.html", active="privacy")
+
+
 @app.post("/api/mylm/intake")
 def mylm_intake():
     raw = request.get_json(silent=True) or request.form
