@@ -195,7 +195,7 @@ def recent_audits():
 
 def audit_snapshot(record=False):
     routes = {rule.rule for rule in app.url_map.iter_rules()}
-    required = ["/", "/agent", "/agentforce", "/ai-marketplace", "/ai-warehouse", "/health"]
+    required = ["/", "/agent", "/agentforce", "/java", "/ai-marketplace", "/ai-warehouse", "/health"]
     checks = [
         {"name": "Core application routes", "ok": all(route in routes for route in required)},
         {"name": "Production debug mode disabled", "ok": not app.debug},
@@ -233,6 +233,8 @@ def home():
         return mylm_page()
     if hostname == "ilaw.thepolka.cloud":
         return ilaw_page()
+    if hostname == "java.thepolka.cloud":
+        return java_page()
     return render_template("index.html", active="home")
 
 
@@ -249,6 +251,11 @@ def mylm_page():
 @app.get("/ilaw")
 def ilaw_page():
     return render_template("ilaw.html", active="ilaw")
+
+
+@app.get("/java")
+def java_page():
+    return render_template("java.html", active="java")
 
 
 @app.post("/ilaw/register")

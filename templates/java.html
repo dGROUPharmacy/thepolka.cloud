@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block title %}Java → Apex Lab | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="java-lab">
+  <header class="java-hero">
+    <div>
+      <p class="eyebrow">Independent learning environment</p>
+      <h1>Java → Apex, without the safari.</h1>
+      <p class="lead">Learn the relationship between Java and Apex, practice a safe Apex-inspired subset in your browser, and download small components for your own website.</p>
+      <div class="java-badges"><span>No account required</span><span>No server-side code execution</span><span>Downloadable work</span></div>
+    </div>
+    <div class="java-flow" aria-label="Learning path"><b>Java idea</b><i>→</i><b>Apex pattern</b><i>→</i><b>Micro widget</b></div>
+  </header>
+
+  <aside class="java-truth">
+    <strong>What this is—and is not.</strong>
+    <p>Apex is Salesforce’s Java-like server language and genuine Apex compiles and runs only on the Salesforce Platform. This independent lab teaches syntax and concepts with a deliberately limited simulator. It is not Salesforce, a Salesforce sandbox, or a replacement for platform validation.</p>
+  </aside>
+
+  <section class="java-compare" aria-labelledby="compare-title">
+    <div><p class="eyebrow">Translation guide</p><h2 id="compare-title">Bring your Java instincts.</h2></div>
+    <div class="java-compare-grid">
+      <article><b>Java</b><code>ArrayList&lt;String&gt;</code><span>Multiple collection implementations</span></article>
+      <article><b>Apex</b><code>List&lt;String&gt;</code><span>List, Set, and Map are used directly</span></article>
+      <article><b>Java</b><code>System.out.println()</code><span>Console output</span></article>
+      <article><b>Apex</b><code>System.debug()</code><span>Execution-log output</span></article>
+      <article><b>Java</b><code>JDBC / ORM</code><span>External database access</span></article>
+      <article><b>Apex</b><code>SOQL + DML</code><span>Platform-integrated data operations</span></article>
+    </div>
+  </section>
+
+  <section class="java-workbench" aria-labelledby="workbench-title">
+    <div class="java-workbench-head">
+      <div><p class="eyebrow">Micro Apex Lab</p><h2 id="workbench-title">Write, inspect, simulate.</h2></div>
+      <label>Starter
+        <select id="apex-starter">
+          <option value="hello">Hello class</option>
+          <option value="score">Lead score</option>
+          <option value="collections">Collections</option>
+          <option value="trigger">Trigger anatomy</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="java-editor-grid">
+      <div class="java-editor">
+        <div class="java-editor-bar"><span>Apex-inspired source</span><small id="apex-lines">0 lines</small></div>
+        <textarea id="apex-source" spellcheck="false" aria-label="Apex source editor"></textarea>
+      </div>
+      <div class="java-console">
+        <div class="java-editor-bar"><span>Simulator output</span><small>safe subset</small></div>
+        <pre id="apex-output" aria-live="polite">Choose a starter, then run it.</pre>
+        <div id="apex-diagnostics" class="java-diagnostics"></div>
+      </div>
+    </div>
+
+    <div class="java-actions">
+      <button id="apex-run" class="cta-button" type="button">Run safe simulation</button>
+      <button id="apex-review" type="button">Review translation</button>
+      <button id="apex-download" type="button">Download .cls</button>
+      <button id="java-download" type="button">Download Java companion</button>
+      <button id="widget-download" type="button">Download micro widget</button>
+    </div>
+  </section>
+
+  <section class="java-roadmap">
+    <div><p class="eyebrow">Learning path</p><h2>From syntax to responsible deployment.</h2></div>
+    <ol>
+      <li><b>01</b><span><strong>Translate</strong>Map familiar Java types, classes, methods, and collections into Apex patterns.</span></li>
+      <li><b>02</b><span><strong>Practice</strong>Use the safe simulator for declarations, arithmetic, conditions, lists, and debug output.</span></li>
+      <li><b>03</b><span><strong>Design</strong>Learn transactions, bulk-safe logic, governor-limit thinking, testing, sharing, and permissions.</span></li>
+      <li><b>04</b><span><strong>Validate for real</strong>Move finished source into an authorized Salesforce Developer org or sandbox for genuine compilation and tests.</span></li>
+    </ol>
+  </section>
+
+  <p class="java-footnote">Apex, Salesforce, and related names are trademarks of Salesforce, Inc. ThePolka.Cloud is independent and is not affiliated with or endorsed by Salesforce.</p>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/java-lab.js') }}"></script>{% endblock %}
