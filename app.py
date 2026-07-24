@@ -125,6 +125,19 @@ def forecast_discussion_connection():
     return connection
 
 
+def mylm_connection():
+    connection = sqlite3.connect(DATA_DIR / "mylm.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute("""CREATE TABLE IF NOT EXISTS pilot_intake (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        authored_email_count INTEGER NOT NULL,
+        consent_confirmed INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+    )""")
+    return connection
+
+
 def forecast_discussion_day():
     return datetime.now(ZoneInfo("America/Denver")).date().isoformat()
 
@@ -200,12 +213,38 @@ def home():
         return agentforce_page()
     if hostname == "apply.thepolka.cloud":
         return apply_page()
+    if hostname == "mylm.thepolka.cloud":
+        return mylm_page()
     return render_template("index.html", active="home")
 
 
 @app.get("/apply")
 def apply_page():
     return render_template("apply.html", active="apply", platforms=WORK_PLATFORMS)
+
+
+@app.get("/mylm")
+def mylm_page():
+    return render_template("mylm.html", active="mylm")
+
+
+@app.post("/api/mylm/intake")
+def mylm_intake():
+    raw = request.get_json(silent=True) or request.form
+    email = str(raw.get("email", "")).strip().lower()
+    try:
+        authored_count = int(raw.get("authored_email_count", 0))
+    except (TypeError, ValueError):
+        authored_count = 0
+    consent = str(raw.get("consent", "")).lower() in {"1", "true", "on", "yes"}
+    if "@" not in email or authored_count < 1000 or not consent:
+        return jsonify(error="A valid email, at least 1,000 authored emails, and consent confirmation are required."), 400
+    with mylm_connection() as connection:
+        connection.execute(
+            "INSERT INTO pilot_intake (email, authored_email_count, consent_confirmed, created_at) VALUES (?, ?, 1, ?)",
+            (email, authored_count, datetime.now(timezone.utc).isoformat()),
+        )
+    return jsonify(status="accepted", message="Pilot request saved. The separate consented email-selection and upload step comes next.", pilot_payment_usd=1)
 
 
 @app.get("/ecosystem/<page>")
