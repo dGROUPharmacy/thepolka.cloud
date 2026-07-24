@@ -52,6 +52,17 @@ AGENT_PRODUCTS = {
     "housekeeping": {"name": "Housekeeping Agent Skin", "price": 89, "description": "Daily audits, safe cache/temp cleanup, route checks, and operational evidence.", "skills": ["daily-audit", "safe-cleanup", "route-checks", "evidence"]},
 }
 
+WORK_PLATFORMS = [
+    {"name": "Handshake AI", "category": "AI evaluation", "stage": "Active work", "action": "Open workspace", "url": "https://ai.joinhandshake.com/", "note": "Project-based fellowship work; availability varies."},
+    {"name": "Outlier", "category": "AI training + coding", "stage": "Assessment", "action": "Open dashboard", "url": "https://app.outlier.ai/", "note": "Complete the Python retake only when your dashboard enables it."},
+    {"name": "Mercor", "category": "Technical expert work", "stage": "Sign up", "action": "Create profile", "url": "https://www.mercor.com/", "note": "Technical and research contracts may require matching."},
+    {"name": "DataAnnotation", "category": "AI evaluation + coding", "stage": "Sign up", "action": "Create profile", "url": "https://www.dataannotation.tech/", "note": "Work access depends on qualification results and demand."},
+    {"name": "Alignerr", "category": "Expert AI evaluation", "stage": "Sign up", "action": "Create profile", "url": "https://www.alignerr.com/", "note": "Subject-area assessments may be required."},
+    {"name": "OneForma", "category": "Data + language projects", "stage": "Explore", "action": "Browse projects", "url": "https://www.oneforma.com/", "note": "Project terms and eligibility differ by location."},
+    {"name": "TELUS Digital AI", "category": "Search + AI community", "stage": "Explore", "action": "Browse openings", "url": "https://www.telusdigital.com/careers/ai-community", "note": "Availability and contractor classification vary."},
+    {"name": "CrowdGen by Appen", "category": "Data collection + evaluation", "stage": "Explore", "action": "Browse projects", "url": "https://crowdgen.com/", "note": "Review each project's pay and requirements before joining."},
+]
+
 
 def database_connection():
     connection = sqlite3.connect(DATA_DIR / "marketplace.db")
@@ -187,7 +198,14 @@ def home():
         return ai_warehouse()
     if hostname == "agentforce.thepolka.cloud":
         return agentforce_page()
+    if hostname == "apply.thepolka.cloud":
+        return apply_page()
     return render_template("index.html", active="home")
+
+
+@app.get("/apply")
+def apply_page():
+    return render_template("apply.html", active="apply", platforms=WORK_PLATFORMS)
 
 
 @app.get("/ecosystem/<page>")
@@ -330,6 +348,34 @@ def agent_checkout(slug):
     except Exception:
         app.logger.exception("Stripe Checkout creation failed")
         return redirect(url_for("agentforce_page", checkout="failed") + f"#{slug}")
+
+
+@app.post("/faire/checkout")
+def faire_checkout():
+    secret = os.environ.get("STRIPE_SECRET_KEY", "")
+    price_id = os.environ.get("STRIPE_PRICE_FAIRE_DESKTOP", "")
+    if not secret or not price_id:
+        return redirect(url_for("ecosystem_page", page="faire", checkout="configuration-required") + "#purchase")
+    body = urlencode({
+        "mode": "payment",
+        "line_items[0][price]": price_id,
+        "line_items[0][quantity]": 1,
+        "success_url": request.url_root.rstrip("/") + url_for("ecosystem_page", page="faire") + "?purchased=faire-desktop#purchase",
+        "cancel_url": request.url_root.rstrip("/") + url_for("ecosystem_page", page="faire") + "?cancelled=faire-desktop#purchase",
+        "metadata[product]": "faire-desktop",
+    }).encode()
+    stripe_request = Request(
+        "https://api.stripe.com/v1/checkout/sessions",
+        data=body,
+        headers={"Authorization": f"Bearer {secret}", "Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urlopen(stripe_request, timeout=20) as response:
+            session = json.load(response)
+        return redirect(session["url"], code=303)
+    except Exception:
+        app.logger.exception("Faire Desktop Stripe Checkout creation failed")
+        return redirect(url_for("ecosystem_page", page="faire", checkout="failed") + "#purchase")
 
 
 @app.post("/api/housekeeping/run")

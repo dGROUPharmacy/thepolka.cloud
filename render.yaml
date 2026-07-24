@@ -30,6 +30,8 @@ services:
         sync: false
       - key: STRIPE_PRICE_HOUSEKEEPING
         sync: false
+      - key: STRIPE_PRICE_FAIRE_DESKTOP
+        sync: false
     disk:
       name: thepolka-data
       mountPath: /var/data
