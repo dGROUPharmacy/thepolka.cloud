@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+{% block title %}AI Law Certificate | iLAW{% endblock %}
+{% block content %}
+<section class="ilaw-page">
+  <header class="ilaw-hero">
+    <div>
+      <p class="ilaw-kicker">iLAW · a ThePolka.Cloud education program</p>
+      <h1>Lead where artificial intelligence meets law.</h1>
+      <p class="ilaw-lede">A live, applied bootcamp for professionals who need to analyze AI governance, contracts, privacy, intellectual property, evidence, risk, and responsible deployment.</p>
+      <div class="ilaw-actions"><a class="ilaw-primary" href="#enroll">Enroll in the founding cohort</a><a class="ilaw-secondary" href="#curriculum">See the curriculum</a></div>
+    </div>
+    <aside class="ilaw-certificate" aria-label="Certificate summary">
+      <span>Provider-issued credential</span><strong>AI Law Certificate</strong>
+      <p>Issued by iLAW upon verified completion of the program requirements.</p>
+      <small>Professional education; not a law degree, bar credential, license to practice law, or institutional accreditation.</small>
+    </aside>
+  </header>
+  <section class="ilaw-proof" aria-label="Program facts">
+    <div><strong>8</strong><span>live sessions</span></div><div><strong>24</strong><span>instructional hours</span></div>
+    <div><strong>1</strong><span>applied capstone</span></div><div><strong>$495</strong><span>founding-cohort tuition</span></div>
+  </section>
+  <section id="curriculum" class="ilaw-section">
+    <p class="ilaw-kicker">Curriculum</p><h2>A working command of the AI-law landscape</h2>
+    <div class="ilaw-curriculum">
+      <article><b>01</b><h3>AI systems and legal foundations</h3><p>Technical fluency, actors, data flows, model lifecycles, and the legal questions each layer creates.</p></article>
+      <article><b>02</b><h3>Governance and regulation</h3><p>Risk classification, organizational governance, impact assessments, documentation, and comparative regulatory frameworks.</p></article>
+      <article><b>03</b><h3>Privacy and data rights</h3><p>Lawful data use, consent, sensitive information, retention, deletion, cross-border considerations, and vendor diligence.</p></article>
+      <article><b>04</b><h3>Copyright, IP, and authorship</h3><p>Training inputs, outputs, licensing, ownership, attribution, trade secrets, and practical content policies.</p></article>
+      <article><b>05</b><h3>Contracts and procurement</h3><p>AI clauses, representations, audit rights, indemnity, service levels, security, and responsible purchasing.</p></article>
+      <article><b>06</b><h3>Bias, civil rights, and employment</h3><p>Automated decisions, discrimination risk, accessibility, hiring systems, testing, monitoring, and escalation.</p></article>
+      <article><b>07</b><h3>Evidence, safety, and disputes</h3><p>Authenticity, deepfakes, discovery, incident response, product risk, professional responsibility, and litigation readiness.</p></article>
+      <article><b>08</b><h3>Capstone: deploy an AI policy</h3><p>Produce and defend a practical governance package for a realistic organization and use case.</p></article>
+    </div>
+  </section>
+  <section class="ilaw-section ilaw-outcomes">
+    <div><p class="ilaw-kicker">What graduates can do</p><h2>Practice-ready AI law analysis</h2><p>Graduates who complete the sessions, assessments, and capstone earn the iLAW AI Law Certificate and may describe themselves as <em>iLAW-certified in applied AI law and governance</em>.</p></div>
+    <ul><li>Map an AI product’s legal and governance risks</li><li>Review common AI contract and procurement terms</li><li>Draft an organizational AI-use policy</li><li>Communicate legal issues across technical and business teams</li><li>Build an evidence-backed compliance and escalation plan</li></ul>
+  </section>
+  <section id="enroll" class="ilaw-enroll">
+    <div><p class="ilaw-kicker">Founding cohort</p><h2>Register and reserve your seat</h2><p>Eight live online sessions, assessment feedback, capstone review, and a verified digital certificate. Tuition is <strong>$495 one time</strong>.</p><p class="ilaw-fine">Enrollment is subject to published dates, instructor availability, refund terms, and the student agreement. The program provides general education, not legal advice.</p></div>
+    <form method="post" action="{{ url_for('ilaw_register') }}">
+      <label>Full name<input name="full_name" required autocomplete="name"></label>
+      <label>Email address<input name="email" type="email" required autocomplete="email"></label>
+      <label>Organization <span>(optional)</span><input name="organization" autocomplete="organization"></label>
+      <label>Cohort<select name="cohort"><option>Founding Cohort · Dates announced after enrollment</option></select></label>
+      <label class="ilaw-check"><input name="terms" type="checkbox" required> I understand this is a provider-issued professional certificate, not a law degree, bar credential, license, or institutional accreditation, and I agree to receive enrollment communications.</label>
+      {% if request.args.get("enrollment") == "paid" %}<p class="ilaw-status">Payment received. Welcome to iLAW—your enrollment instructions will follow by email.</p>{% endif %}
+      {% if request.args.get("registration") == "saved" %}<p class="ilaw-status">Your registration is saved. Online checkout is being activated; we will contact you with the payment link.</p>{% endif %}
+      {% if request.args.get("registration") == "incomplete" %}<p class="ilaw-error">Please complete the required fields and confirmation.</p>{% endif %}
+      <button type="submit">Register and continue to secure payment</button>
+      <small>Payment is processed by Stripe when live checkout is enabled. Card details are not stored by ThePolka.Cloud.</small>
+    </form>
+  </section>
+  <section class="ilaw-disclosure"><strong>Credential transparency</strong><p>“Accredited” is not used until iLAW has obtained accreditation from a named, recognized accrediting body. The certificate verifies completion of iLAW’s own curriculum; it does not confer attorney status or authorize legal practice.</p></section>
+</section>
+{% endblock %}

@@ -32,6 +32,8 @@ services:
         sync: false
       - key: STRIPE_PRICE_FAIRE_DESKTOP
         sync: false
+      - key: STRIPE_PRICE_ILAW_CERTIFICATE
+        sync: false
     disk:
       name: thepolka-data
       mountPath: /var/data

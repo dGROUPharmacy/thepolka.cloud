@@ -138,6 +138,22 @@ def mylm_connection():
     return connection
 
 
+def ilaw_connection():
+    connection = sqlite3.connect(DATA_DIR / "ilaw.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute("""CREATE TABLE IF NOT EXISTS registrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        organization TEXT NOT NULL DEFAULT '',
+        cohort TEXT NOT NULL,
+        terms_confirmed INTEGER NOT NULL,
+        payment_status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL
+    )""")
+    return connection
+
+
 def forecast_discussion_day():
     return datetime.now(ZoneInfo("America/Denver")).date().isoformat()
 
@@ -215,6 +231,8 @@ def home():
         return apply_page()
     if hostname == "mylm.thepolka.cloud":
         return mylm_page()
+    if hostname == "ilaw.thepolka.cloud":
+        return ilaw_page()
     return render_template("index.html", active="home")
 
 
@@ -226,6 +244,53 @@ def apply_page():
 @app.get("/mylm")
 def mylm_page():
     return render_template("mylm.html", active="mylm")
+
+
+@app.get("/ilaw")
+def ilaw_page():
+    return render_template("ilaw.html", active="ilaw")
+
+
+@app.post("/ilaw/register")
+def ilaw_register():
+    full_name = request.form.get("full_name", "").strip()[:120]
+    email = request.form.get("email", "").strip().lower()[:200]
+    organization = request.form.get("organization", "").strip()[:160]
+    cohort = request.form.get("cohort", "Founding Cohort").strip()[:80]
+    terms = request.form.get("terms") == "on"
+    if not full_name or "@" not in email or not terms:
+        return redirect(url_for("ilaw_page", registration="incomplete") + "#enroll")
+    with ilaw_connection() as connection:
+        cursor = connection.execute(
+            """INSERT INTO registrations
+               (full_name, email, organization, cohort, terms_confirmed, created_at)
+               VALUES (?, ?, ?, ?, 1, ?)""",
+            (full_name, email, organization, cohort, datetime.now(timezone.utc).isoformat()),
+        )
+        registration_id = cursor.lastrowid
+    secret = os.environ.get("STRIPE_SECRET_KEY", "")
+    price_id = os.environ.get("STRIPE_PRICE_ILAW_CERTIFICATE", "")
+    if not secret or not price_id:
+        return redirect(url_for("ilaw_page", registration="saved", checkout="configuration-required") + "#enroll")
+    body = urlencode({
+        "mode": "payment",
+        "line_items[0][price]": price_id,
+        "line_items[0][quantity]": 1,
+        "customer_email": email,
+        "success_url": request.url_root.rstrip("/") + url_for("ilaw_page") + "?enrollment=paid#enroll",
+        "cancel_url": request.url_root.rstrip("/") + url_for("ilaw_page") + "?enrollment=cancelled#enroll",
+        "metadata[product]": "ilaw-ai-law-certificate",
+        "metadata[registration_id]": registration_id,
+        "metadata[student_name]": full_name,
+    }).encode()
+    stripe_request = Request("https://api.stripe.com/v1/checkout/sessions", data=body, headers={"Authorization": f"Bearer {secret}", "Content-Type": "application/x-www-form-urlencoded"})
+    try:
+        with urlopen(stripe_request, timeout=20) as response:
+            session = json.load(response)
+        return redirect(session["url"], code=303)
+    except Exception:
+        app.logger.exception("iLAW Stripe Checkout creation failed")
+        return redirect(url_for("ilaw_page", registration="saved", checkout="failed") + "#enroll")
 
 
 @app.get("/privacy")
