@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block title %}MyLM | ThePolka.Cloud{% endblock %}
+{% block content %}
+<section class="content-page mylm-page">
+  <p class="eyebrow">Your language. Your machine.</p>
+  <h1>Make Faire sound more like the author.</h1>
+  <p class="lead">MyLM learns patterns from writing you authored—word choice, rhythm, structure, tone, and preferred phrasing—then packages that personal voice layer for Faire OS. It does not impersonate another person or claim their messages as yours.</p>
+  <div class="mylm-flow">
+    <article><b>1</b><h2>Select</h2><p>Choose only messages and files you authored and have the right to use.</p></article>
+    <article><b>2</b><h2>Clean locally</h2><p>Remove quoted replies, signatures, addresses, names, secrets, and third-party text before training.</p></article>
+    <article><b>3</b><h2>Shape your voice</h2><p>Build a compact style adapter and local retrieval index around your vocabulary, tone, and writing patterns.</p></article>
+    <article><b>4</b><h2>Run in Faire</h2><p>Install the package into Faire Desktop for offline-capable drafting in the author's own curated voice.</p></article>
+  </div>
+  <section class="mylm-offer">
+    <p class="eyebrow">$1 contributor pilot credit</p>
+    <h2>Help test the authored-email pipeline.</h2>
+    <p>Accounts with at least 1,000 emails may join the pilot. The $1 payment is compensation for an explicitly consented contribution of selected email contents to the MyLM dataset and personal-model build.</p>
+    <div class="mylm-shared">
+      <h3>Shared when you enroll</h3>
+      <ul>
+        <li>Your email address, so we can contact you about the pilot.</li>
+        <li>Your approximate count of emails you personally authored.</li>
+        <li>Your consent record and confirmation that you understand the pilot rules.</li>
+      </ul>
+      <h3>Shared only after a separate upload step</h3>
+      <ul>
+        <li>The selected email bodies, subject lines, timestamps, sender/recipient fields, and attachment text you approve.</li>
+        <li>A cleaned training dataset and derived author-voice profile used to produce your MyLM package.</li>
+        <li>Only material you represent that you may legally contribute; passwords, authentication credentials, payment details, and unselected messages are excluded.</li>
+      </ul>
+    </div>
+    <form id="mylm-form">
+      <label>Email address<input id="mylm-email" type="email" required autocomplete="email"></label>
+      <label>Approximate emails you authored<input id="mylm-count" type="number" min="1000" step="1" required></label>
+      <label class="mylm-check"><input id="mylm-consent" type="checkbox" required> I consent to submit my contact and eligibility information now and, at the separate connection/upload step, to contribute the email contents and metadata I select in exchange for the stated $1 payment and creation of my personal MyLM package. I represent that I have the right to contribute the selected material.</label>
+      <button type="submit">Join the MyLM pilot</button>
+      <p id="mylm-status" role="status"></p>
+    </form>
+  </section>
+  <aside class="notice-card"><h2>License and ownership</h2><p>You retain ownership of your source material. The upload step must present the specific dataset license, retention period, deletion process, model-use rights, and whether a contribution may improve shared MyLM systems before transfer. Your package can contain a style adapter, local retrieval index, configuration, evaluation report, and Faire installer manifest.</p></aside>
+</section>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/mylm.js') }}" defer></script>{% endblock %}
