@@ -243,6 +243,8 @@ def home():
         return mylm_page()
     if hostname == "ilaw.thepolka.cloud":
         return ilaw_page()
+    if hostname == "profile.thepolka.cloud":
+        return profile_page()
     if hostname == "java.thepolka.cloud":
         return java_page()
     return render_template("index.html", active="home")
@@ -261,6 +263,11 @@ def mylm_page():
 @app.get("/ilaw")
 def ilaw_page():
     return render_template("ilaw.html", active="ilaw")
+
+
+@app.get("/profile")
+def profile_page():
+    return render_template("profile.html", active="profile")
 
 
 @app.get("/java")
