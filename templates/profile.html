@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block title %}Profile Key — ThePolka.Cloud{% endblock %}
+{% block description %}Enter your basic profile once, choose relevant services, and open official account signup pages with privacy-first browser autofill.{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">{% endblock %}
+{% block content %}
+<div class="pk">
+  <header class="pk-hero">
+    <div class="pk-eyebrow">THEPOLKA.CLOUD / PROFILE KEY</div>
+    <h1>Enter once.<br><span>Set up everywhere.</span></h1>
+    <p>A local-first profile bundle for faster account setup. Choose the services that matter, review every destination, and stay in control of every submission.</p>
+    <div class="pk-signal"><i></i> Your data stays in this browser</div>
+  </header>
+
+  <section class="pk-panel" aria-labelledby="profile-title">
+    <div class="pk-head">
+      <div><span class="pk-step">01</span><h2 id="profile-title">Build your Profile Key</h2></div>
+      <button id="pk-clear" class="pk-ghost" type="button">Clear device</button>
+    </div>
+    <form id="pk-form" autocomplete="on">
+      <label>First name<input name="firstName" autocomplete="given-name" required></label>
+      <label>Last name<input name="lastName" autocomplete="family-name" required></label>
+      <label class="wide">Email<input name="email" type="email" autocomplete="email" required></label>
+      <label>Phone<input name="phone" type="tel" autocomplete="tel"></label>
+      <label>Username preference<input name="username" autocomplete="username" placeholder="yourhandle"></label>
+      <label class="wide">Street address<input name="address" autocomplete="street-address"></label>
+      <label>City<input name="city" autocomplete="address-level2"></label>
+      <label>State / region<input name="region" autocomplete="address-level1"></label>
+      <label>Postal code<input name="postal" autocomplete="postal-code"></label>
+      <label>Country<input name="country" autocomplete="country-name"></label>
+    </form>
+    <p class="pk-privacy">No passwords. No server upload. Information is saved only to this device when you choose “Save locally.”</p>
+    <button id="pk-save" class="pk-primary" type="button">Save locally</button>
+  </section>
+
+  <section aria-labelledby="catalog-title">
+    <div class="pk-head">
+      <div><span class="pk-step">02</span><h2 id="catalog-title">Choose your destinations</h2></div>
+      <div class="pk-filters" role="group" aria-label="Filter services">
+        <button class="pk-filter active" data-filter="all">All</button>
+        <button class="pk-filter" data-filter="career">Career</button>
+        <button class="pk-filter" data-filter="creator">Creator</button>
+        <button class="pk-filter" data-filter="developer">Developer</button>
+      </div>
+    </div>
+    <div id="pk-services" class="pk-services"></div>
+  </section>
+
+  <aside class="pk-launchbar" aria-live="polite">
+    <div><strong id="pk-count">0 services selected</strong><span>Review and open each official signup page.</span></div>
+    <button id="pk-launch" class="pk-primary" type="button">Open selected signups</button>
+  </aside>
+
+  <section class="pk-how">
+    <span class="pk-step">03</span>
+    <h2>One click—without losing control.</h2>
+    <div class="pk-rules">
+      <article><b>1</b><h3>Choose</h3><p>Select only the accounts relevant to your goals.</p></article>
+      <article><b>2</b><h3>Open</h3><p>We open official signup pages in separate tabs.</p></article>
+      <article><b>3</b><h3>Review</h3><p>Use browser autofill, choose a unique password, and submit yourself.</p></article>
+    </div>
+  </section>
+
+  <div class="pk-disclaimer"><strong>Disclosure</strong> Profile Key is a form-assistance and directory tool. It does not create accounts automatically, store passwords, bypass CAPTCHAs, accept terms, verify identities, or guarantee approval. Each third-party service controls its own eligibility, policies, and submission process.</div>
+</div>
+{% endblock %}
+{% block extra_js %}<script src="{{ url_for('static', filename='js/profile.js') }}"></script>{% endblock %}
