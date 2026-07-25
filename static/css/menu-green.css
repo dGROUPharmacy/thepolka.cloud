@@ -1,0 +1,34 @@
+:root {
+  --accent: #1f7a3f;
+  --menu-green: #42d66b;
+  --menu-green-dark: #123c22;
+  --menu-green-soft: #e3f7e8;
+}
+
+.sidebar {
+  border-right-color: #9acda7;
+}
+
+.sidebar-brand a,
+.nav-section-label {
+  color: #155f32;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  background: var(--menu-green-soft);
+  color: #0e4c27;
+  outline-color: var(--menu-green);
+}
+
+.nav-link.active {
+  background: var(--menu-green-dark);
+  color: #effff3;
+  border-color: var(--menu-green);
+  box-shadow: inset 3px 0 0 var(--menu-green);
+}
+
+.hero-ticker {
+  background: #174d2a;
+  color: #effff3;
+}
