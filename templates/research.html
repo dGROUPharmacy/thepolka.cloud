@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}Research | ThePolka.Cloud{% endblock %}
+{% block description %}Research, technical case studies, and publication links from ThePolka.Cloud.{% endblock %}
+{% block extra_css %}
+<style>
+.research-page{max-width:1050px;margin:0 auto;padding:2rem 0 5rem}.research-hero{padding:3rem 0;border-bottom:1px solid #aaa}.research-hero h1{margin:.2rem 0;font-size:clamp(3rem,8vw,7rem);line-height:.9;letter-spacing:-.055em}.research-hero p{max-width:760px;font-size:1.12rem;line-height:1.7}.scholar-window{margin:2.5rem 0;border:1px solid #aab2bc;border-radius:18px;overflow:hidden;background:#fff;box-shadow:0 20px 50px rgba(10,22,36,.12)}.scholar-bar{display:flex;align-items:center;gap:.45rem;padding:.75rem 1rem;background:#eef1f5;border-bottom:1px solid #ccd2d9}.scholar-bar i{width:11px;height:11px;border-radius:50%;background:#d2d6dc}.scholar-bar i:first-child{background:#ef6a61}.scholar-bar i:nth-child(2){background:#eab94f}.scholar-bar i:nth-child(3){background:#64bd75}.scholar-body{display:grid;grid-template-columns:1fr auto;gap:2rem;align-items:center;padding:clamp(1.5rem,4vw,3rem)}.scholar-body h2{margin:.2rem 0;font-size:clamp(2rem,4vw,3.4rem)}.research-button{display:inline-block;padding:.9rem 1.15rem;border-radius:999px;background:#1a73e8;color:#fff;text-decoration:none;font-weight:800}.paper-card{padding:clamp(1.5rem,4vw,3rem);border-left:7px solid #7657d5;background:#f5f2ff}.paper-card h2{margin:.35rem 0 1rem;font-family:Georgia,serif;font-size:clamp(2rem,4vw,3.25rem)}.paper-card p{line-height:1.7}.paper-meta{font-size:.82rem;text-transform:uppercase;letter-spacing:.09em;color:#625979}.paper-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.3rem}.paper-actions a{padding:.75rem 1rem;border:1px solid #6753aa;border-radius:999px;color:#382879;text-decoration:none;font-weight:750}@media(max-width:700px){.scholar-body{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<main class="research-page">
+  <header class="research-hero">
+    <p class="eyebrow">ThePolka.Cloud Research</p>
+    <h1>Ideas with evidence.</h1>
+    <p>Technical case studies and working papers about durable Python services, observable automation, practical AI systems, and the infrastructure behind ThePolka.Cloud.</p>
+  </header>
+
+  <section class="scholar-window" aria-labelledby="scholar-title">
+    <div class="scholar-bar" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="scholar-body">
+      <div><p class="eyebrow">Google Scholar window</p><h2 id="scholar-title">Open our Scholar account.</h2><p>The account opens in a new tab so Google can show the signed-in profile and publication tools securely.</p></div>
+      <a class="research-button" href="https://scholar.google.com/citations?view_op=list_works&hl=en" target="_blank" rel="noopener noreferrer">Open Google Scholar ↗</a>
+    </div>
+  </section>
+
+  <article class="paper-card">
+    <p class="paper-meta">New working paper · July 2026</p>
+    <h2>The Executable Dot: A Distinctive Architecture for a Self-Auditing Python Web Ecosystem</h2>
+    <p><strong>A technical case study of ThePolka.Cloud.</strong></p>
+    <p>What makes this research different is the alignment of language and infrastructure: the dot in <code>thepolka.cloud</code> simultaneously completes the spoken name “the polka-dot cloud,” serves as the brand mark, and performs real DNS routing. The paper connects that executable identity to a Flask, Gunicorn, GitHub, Render, and Cloudflare architecture designed to leave inspectable operational evidence.</p>
+    <p><strong>Keywords:</strong> Python, Flask, web deployment, self-auditing systems, automation, Render, cloud architecture, design systems.</p>
+    <div class="paper-actions">
+      <a href="{{ url_for('static', filename='research/making-the-dot-operative.md') }}">Read the full article</a>
+      <a href="{{ url_for('static', filename='research/making-the-dot-operative.md') }}" download>Download Markdown</a>
+      <a href="https://scholar.google.com/citations?view_op=list_works&hl=en" target="_blank" rel="noopener noreferrer">Manage on Scholar ↗</a>
+    </div>
+  </article>
+</main>
+{% endblock %}
