@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 900" role="img" aria-labelledby="title desc">
+  <title id="title">Agentforce green signal</title>
+  <desc id="desc">A red, yellow, and green traffic signal with the green lamp illuminated.</desc>
+  <defs>
+    <radialGradient id="red" cx=".38" cy=".32" r=".72">
+      <stop offset="0" stop-color="#e85b4f"/>
+      <stop offset="1" stop-color="#8f2d2a"/>
+    </radialGradient>
+    <radialGradient id="yellow" cx=".38" cy=".32" r=".72">
+      <stop offset="0" stop-color="#f0d46a"/>
+      <stop offset="1" stop-color="#9d7c2d"/>
+    </radialGradient>
+    <radialGradient id="green" cx=".38" cy=".32" r=".72">
+      <stop offset="0" stop-color="#d7ff9d"/>
+      <stop offset=".35" stop-color="#6ed174"/>
+      <stop offset="1" stop-color="#257043"/>
+    </radialGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="24" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path d="M260 0v86" stroke="#385347" stroke-width="24"/>
+  <rect x="72" y="72" width="376" height="700" rx="78" fill="#243c34" stroke="#6f8e75" stroke-width="12"/>
+  <path d="M95 235h330M95 445h330" stroke="#6f8e75" stroke-width="8" opacity=".55"/>
+  <circle cx="260" cy="205" r="112" fill="url(#red)" stroke="#492b28" stroke-width="12" opacity=".88"/>
+  <circle cx="260" cy="420" r="112" fill="url(#yellow)" stroke="#514725" stroke-width="12" opacity=".9"/>
+  <circle cx="260" cy="635" r="137" fill="#70d879" opacity=".34" filter="url(#glow)"/>
+  <circle cx="260" cy="635" r="112" fill="url(#green)" stroke="#244c36" stroke-width="12" filter="url(#glow)"/>
+  <path d="M142 202c22-65 89-91 145-76M143 418c22-64 89-90 145-75M143 633c22-65 89-91 145-76" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="round" opacity=".24"/>
+  <path d="M220 772h80l26 128H194z" fill="#385347"/>
+</svg>
