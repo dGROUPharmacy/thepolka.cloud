@@ -1,0 +1,43 @@
+.smart-ai-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.smart-ai-page::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  right: -2rem;
+  bottom: -2rem;
+  width: min(44vw, 620px);
+  height: min(86vh, 900px);
+  background: url("../img/smart-ai-vine.svg") right bottom / contain no-repeat;
+  opacity: .13;
+  pointer-events: none;
+  filter: saturate(.9);
+}
+
+.smart-ai-page .audit-card,
+.smart-ai-page section {
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 760px) {
+  .smart-ai-page::before {
+    width: 78vw;
+    opacity: .1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .smart-ai-page::before {
+    transform-origin: right bottom;
+    animation: vine-breathe 9s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes vine-breathe {
+  from { transform: rotate(-.4deg) scale(.99); }
+  to { transform: rotate(.5deg) scale(1.015); }
+}
