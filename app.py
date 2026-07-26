@@ -219,10 +219,28 @@ def database_connection():
         "memory_bank_opt_in": "INTEGER NOT NULL DEFAULT 0",
         "ai_answer": "TEXT NOT NULL DEFAULT ''",
         "raw_text": "TEXT NOT NULL DEFAULT ''",
+        "submitter_email": "TEXT NOT NULL DEFAULT ''",
+        "prompt_text": "TEXT NOT NULL DEFAULT ''",
+        "quality_category": "TEXT NOT NULL DEFAULT 'awaiting-ratings'",
+        "earned_cents": "INTEGER NOT NULL DEFAULT 0",
     }
     for column, definition in migrations.items():
         if column not in columns:
             connection.execute(f"ALTER TABLE contributions ADD COLUMN {column} {definition}")
+    connection.executescript(
+        """CREATE TABLE IF NOT EXISTS contribution_ratings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contribution_id INTEGER NOT NULL,
+            rater_email TEXT NOT NULL,
+            category TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(contribution_id, rater_email)
+        );
+        CREATE INDEX IF NOT EXISTS contribution_email_day
+        ON contributions(submitter_email, created_at);
+        CREATE INDEX IF NOT EXISTS contribution_rating_item
+        ON contribution_ratings(contribution_id);"""
+    )
     connection.commit()
     return connection
 
@@ -230,6 +248,13 @@ def database_connection():
 AI_UPLOAD_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".json", ".csv"}
 AI_UPLOAD_DIRECTORY = DATA_DIR / "ai_content_uploads"
 AI_UPLOAD_DIRECTORY.mkdir(parents=True, exist_ok=True)
+WAREHOUSE_CATEGORIES = {
+    "followed-prompt": "Listened to the prompt well",
+    "truthful": "Most truthful",
+    "helpful": "Most helpful",
+    "hallucination": "Deliberate hallucination",
+    "misleading": "Misleading",
+}
 
 
 def mail_connection():
@@ -764,7 +789,7 @@ def faire_release_manifest_api():
     )
     return jsonify(
         product="FAIRE OS",
-        version="1.1.0",
+        version="1.1.1",
         channel="stable",
         agent_catalog_revision=hashlib.sha256(catalog_payload.encode()).hexdigest()[:12],
         agent_catalog_url=url_for("agents_evidence_api", _external=True),
@@ -938,16 +963,29 @@ def ai_marketplace():
         content_type = request.form.get("content_type", "").strip()[:60]
         description = request.form.get("description", "").strip()[:3000]
         ai_answer = request.form.get("ai_answer", "").strip()[:12000]
+        submitter_email = request.form.get("email", "").strip().lower()[:254]
+        prompt_text = request.form.get("prompt_text", "").strip()[:12000]
         rights_confirmed = request.form.get("rights_confirmed") == "yes"
         memory_bank_opt_in = request.form.get("memory_bank_opt_in") == "yes"
         upload = request.files.get("document")
         original_filename = secure_filename(upload.filename or "") if upload else ""
         extension = Path(original_filename).suffix.lower()
-        if not all((title, expertise, content_type, description, rights_confirmed, upload, original_filename)):
-            error = "Complete every field, attach a document, and confirm you have the right to license it."
+        if not all((submitter_email, prompt_text, title, expertise, content_type, description, rights_confirmed, upload, original_filename)):
+            error = "Add your email, prompt, attachment details, and rights confirmation."
+        elif "@" not in submitter_email:
+            error = "Enter a valid email address."
         elif extension not in AI_UPLOAD_EXTENSIONS:
             error = "Upload a PDF, DOCX, TXT, Markdown, JSON, or CSV document."
         else:
+            today = datetime.now(timezone.utc).date().isoformat()
+            with database_connection() as connection:
+                already_submitted = connection.execute(
+                    "SELECT 1 FROM contributions WHERE lower(submitter_email)=? AND substr(created_at, 1, 10)=? LIMIT 1",
+                    (submitter_email, today),
+                ).fetchone()
+            if already_submitted:
+                error = "This email has already submitted today. Return tomorrow for the next one-cent submission."
+        if not error and extension in AI_UPLOAD_EXTENSIONS:
             stored_filename = f"{secrets.token_hex(24)}{extension}"
             stored_path = AI_UPLOAD_DIRECTORY / stored_filename
             digest = hashlib.sha256()
@@ -965,15 +1003,16 @@ def ai_marketplace():
                     """INSERT INTO contributions
                        (title, expertise, content_type, description, rights_confirmed,
                         status, created_at, original_filename, stored_filename,
-                        file_size, file_sha256, memory_bank_opt_in, ai_answer,
-                        raw_text)
-                       VALUES (?, ?, ?, ?, 1, 'submitted', ?, ?, ?, ?, ?, ?, ?, ?)""",
+                       file_size, file_sha256, memory_bank_opt_in, ai_answer,
+                        raw_text, submitter_email, prompt_text, quality_category,
+                        earned_cents)
+                       VALUES (?, ?, ?, ?, 1, 'shelved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting-ratings', 1)""",
                     (
                         title, expertise, content_type, description,
                         datetime.now(timezone.utc).isoformat(),
                         original_filename, stored_filename, file_size,
                         digest.hexdigest(), int(memory_bank_opt_in), ai_answer,
-                        raw_text,
+                        raw_text, submitter_email, prompt_text,
                     ),
                 )
             return redirect(url_for("ai_marketplace", submitted="1"))
@@ -981,7 +1020,7 @@ def ai_marketplace():
     with database_connection() as connection:
         submissions = connection.execute(
             """SELECT title, expertise, content_type, status, created_at,
-                      original_filename, file_size, memory_bank_opt_in
+                      original_filename, file_size, memory_bank_opt_in, earned_cents
                FROM contributions ORDER BY id DESC LIMIT 20"""
         ).fetchall()
     return render_template(
@@ -993,17 +1032,57 @@ def ai_marketplace():
     )
 
 
-@app.get("/ai-warehouse")
+@app.route("/ai-warehouse", methods=["GET", "POST"])
 def ai_warehouse():
+    rating_error = None
+    if request.method == "POST":
+        contribution_id = request.form.get("contribution_id", type=int)
+        rater_email = request.form.get("rater_email", "").strip().lower()[:254]
+        category = request.form.get("category", "").strip()
+        if not contribution_id or "@" not in rater_email or category not in WAREHOUSE_CATEGORIES:
+            rating_error = "Choose one rating and enter a valid email."
+        else:
+            try:
+                with database_connection() as connection:
+                    connection.execute(
+                        "INSERT INTO contribution_ratings (contribution_id, rater_email, category, created_at) VALUES (?, ?, ?, ?)",
+                        (contribution_id, rater_email, category, datetime.now(timezone.utc).isoformat()),
+                    )
+                    winner = connection.execute(
+                        """SELECT category, COUNT(*) AS votes FROM contribution_ratings
+                           WHERE contribution_id=? GROUP BY category
+                           ORDER BY votes DESC, category ASC LIMIT 1""",
+                        (contribution_id,),
+                    ).fetchone()
+                    if winner:
+                        connection.execute(
+                            "UPDATE contributions SET quality_category=? WHERE id=?",
+                            (winner["category"], contribution_id),
+                        )
+                return redirect(url_for("ai_warehouse", rated="1") + f"#item-{contribution_id}")
+            except sqlite3.IntegrityError:
+                rating_error = "That email has already rated this item."
     with database_connection() as connection:
         catalog = connection.execute(
-            "SELECT id, title, expertise, content_type, created_at FROM contributions WHERE status = 'accepted' ORDER BY id DESC"
+            """SELECT c.id, c.title, c.expertise, c.content_type, c.description,
+                      c.prompt_text, c.ai_answer, c.created_at, c.quality_category,
+                      COUNT(r.id) AS rating_count
+               FROM contributions c LEFT JOIN contribution_ratings r ON r.contribution_id=c.id
+               WHERE c.status IN ('shelved', 'accepted')
+               GROUP BY c.id ORDER BY c.id DESC"""
         ).fetchall()
         counts = {
             row["status"]: row["count"]
             for row in connection.execute("SELECT status, COUNT(*) AS count FROM contributions GROUP BY status")
         }
-    return render_template("ai_warehouse.html", active="warehouse", catalog=catalog, counts=counts)
+    shelves = {key: [] for key in ["awaiting-ratings", *WAREHOUSE_CATEGORIES]}
+    for item in catalog:
+        shelves.setdefault(item["quality_category"], []).append(item)
+    return render_template(
+        "ai_warehouse.html", active="warehouse", catalog=catalog, counts=counts,
+        shelves=shelves, categories=WAREHOUSE_CATEGORIES, rating_error=rating_error,
+        rated=request.args.get("rated") == "1",
+    )
 
 
 @app.get("/ai-memory-bank")
