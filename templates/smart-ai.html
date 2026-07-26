@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}Smart AI | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/smart-ai.css') }}">{% endblock %}
+{% block content %}
+<section class="content-page smart-ai-page">
+  <p class="eyebrow">Continuous integration · continuous deployment</p>
+  <h1>Smart AI is alive with evidence.</h1>
+  <p class="lead">A continuously refreshed window into how ThePolka.Cloud is tested, packaged, deployed, and connected. Growth here means recorded routes, checks, packages, and integrations—not unsupervised changes.</p>
+  <div class="status-banner status-pass"><strong>LIVE</strong><span id="smart-checked">Checked {{ snapshot.checked_at }}</span></div>
+  <div class="card-grid" id="smart-measures">
+    <article class="audit-card"><span class="audit-mark">{{ snapshot.measures.agents_active }}</span><h2>Agents active</h2><p>Validated catalog definitions</p></article>
+    <article class="audit-card"><span class="audit-mark">{{ snapshot.measures.packages_ready }}</span><h2>Packages ready</h2><p>Downloadable ZIP builds</p></article>
+    <article class="audit-card"><span class="audit-mark">{{ snapshot.measures.connections_configured }}</span><h2>Connections</h2><p>Explicitly configured adapters</p></article>
+    <article class="audit-card"><span class="audit-mark">{{ snapshot.measures.purchase_paths_ready }}</span><h2>Purchase paths</h2><p>Private Stripe configuration detected</p></article>
+    <article class="audit-card"><span class="audit-mark">{{ snapshot.measures.routes_registered }}</span><h2>Living routes</h2><p>Registered application surfaces</p></article>
+  </div>
+  <section aria-labelledby="deployment-title">
+    <h2 id="deployment-title">Deployment pulse</h2>
+    <p><strong>Platform:</strong> {{ snapshot.deployment.platform }} · <strong>Commit:</strong> <code>{{ snapshot.deployment.commit }}</code> · <strong>CI:</strong> scheduled audit plus deploy-triggered Render build</p>
+  </section>
+  <section aria-labelledby="feed-title">
+    <h2 id="feed-title">Live evidence feed</h2>
+    <ol class="audit-timeline" id="smart-feed">
+      {% for event in snapshot.feed %}
+      <li><strong>{{ event.status|upper }} · {{ event.event_type|replace('_', ' ') }}</strong><time datetime="{{ event.created_at }}">{{ event.created_at }}</time><span>{{ event.agent_slug ~ ': ' if event.agent_slug else '' }}{{ event.detail }}</span></li>
+      {% endfor %}
+    </ol>
+  </section>
+  <p class="small-note">{{ snapshot.claim }} Feed refreshes every 15 seconds.</p>
+  <a class="text-link" href="{{ url_for('smart_ai_feed_api') }}">Machine-readable feed &rarr;</a>
+</section>
+<script>
+(() => {
+  const feed = document.getElementById("smart-feed");
+  const checked = document.getElementById("smart-checked");
+  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+  async function refresh() {
+    try {
+      const response = await fetch("{{ url_for('smart_ai_feed_api') }}", {headers: {"Accept": "application/json"}});
+      if (!response.ok) return;
+      const data = await response.json();
+      checked.textContent = `Checked ${data.checked_at}`;
+      feed.innerHTML = data.feed.map(event => `<li><strong>${escapeHtml(event.status).toUpperCase()} · ${escapeHtml(event.event_type).replaceAll("_", " ")}</strong><time>${escapeHtml(event.created_at)}</time><span>${event.agent_slug ? escapeHtml(event.agent_slug) + ": " : ""}${escapeHtml(event.detail)}</span></li>`).join("");
+    } catch (_) {}
+  }
+  window.setInterval(refresh, 15000);
+})();
+</script>
+{% endblock %}

@@ -20,3 +20,7 @@ jobs:
         run: |
           curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/agentforce
           curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/agentforce/download/base
+      - name: Verify Smart AI observatory
+        run: |
+          curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/8
+          curl --fail --silent --show-error https://thepolka.cloud/api/smart-ai/feed
