@@ -8,6 +8,9 @@ import json
 import secrets
 import hashlib
 import stripe
+import hmac
+import time
+from collections import defaultdict, deque
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
@@ -37,6 +40,44 @@ app.config.update(
     MAX_CONTENT_LENGTH=12 * 1024 * 1024,
 )
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+RATE_WINDOWS = defaultdict(deque)
+BLOCKED_PROBE_PREFIXES = (
+    "/.env", "/.git", "/wp-admin", "/wp-login", "/xmlrpc.php",
+    "/phpmyadmin", "/vendor/phpunit", "/cgi-bin", "/actuator",
+)
+
+
+def request_identity():
+    forwarded = request.headers.get("CF-Connecting-IP") or request.headers.get("X-Forwarded-For", "")
+    return (forwarded.split(",", 1)[0].strip() or request.remote_addr or "unknown")[:80]
+
+
+def limited(bucket, maximum, seconds):
+    now = time.monotonic()
+    key = (bucket, request_identity())
+    entries = RATE_WINDOWS[key]
+    while entries and entries[0] <= now - seconds:
+        entries.popleft()
+    if len(entries) >= maximum:
+        return True
+    entries.append(now)
+    return False
+
+
+def admin_authorized():
+    expected = os.environ.get("ADMIN_TOKEN", "")
+    supplied = request.headers.get("X-Admin-Token", "")
+    return bool(expected and supplied and hmac.compare_digest(expected, supplied))
+
+
+@app.before_request
+def reject_common_probes():
+    path = request.path.lower()
+    if path.startswith(BLOCKED_PROBE_PREFIXES):
+        return Response("Not found", status=404, mimetype="text/plain")
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"} and limited("write", 30, 60):
+        return jsonify(error="Too many requests. Try again shortly."), 429
 
 
 def faire_order_connection():
@@ -109,6 +150,17 @@ def security_headers(response):
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; connect-src 'self' https://api.weather.gov "
+        "https://nominatim.openstreetmap.org; object-src 'none'; base-uri 'self'; "
+        "frame-ancestors 'self'; form-action 'self'",
+    )
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    if request.path.startswith("/api/") or request.path.startswith("/stripe/"):
+        response.headers.setdefault("Cache-Control", "no-store")
     return response
 
 
@@ -549,6 +601,8 @@ def activity_api():
 
 @app.post("/api/send")
 def send_mail_api():
+    if not admin_authorized():
+        return jsonify(error="Administrative authorization required."), 403
     data = request.get_json(silent=True) or {}
     sender, recipient = str(data.get("sender", "")).strip(), str(data.get("recipient", "")).strip()
     if not sender or not recipient:
@@ -566,6 +620,8 @@ def send_mail_api():
 
 @app.post("/api/read/<int:message_id>")
 def mark_mail_read_api(message_id):
+    if not admin_authorized():
+        return jsonify(error="Administrative authorization required."), 403
     with mail_connection() as db:
         db.execute("UPDATE messages SET read=1 WHERE id=?", (message_id,))
     return jsonify(status="ok")
@@ -694,6 +750,8 @@ def stripe_webhook():
 
 @app.post("/api/housekeeping/run")
 def housekeeping_run():
+    if not admin_authorized():
+        return jsonify(error="Administrative authorization required."), 403
     removed = []
     cutoff = datetime.now(timezone.utc).timestamp() - (7 * 86400)
     for path in DATA_DIR.glob("*.tmp"):

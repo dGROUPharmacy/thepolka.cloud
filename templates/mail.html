@@ -80,14 +80,25 @@
     });
   }
 
+  function safeText(value) {
+    return String(value == null ? "" : value);
+  }
+
   function loadMailboxes() {
     return fetchJSON("/api/mailboxes").then(function (data) {
       mailboxes = data;
       renderCatalog();
       renderComposeOptions();
     }).catch(function (err) {
-      document.getElementById("catalog-body").innerHTML =
-        '<tr><td colspan="3" class="me-empty">Error loading mailboxes: ' + err.message + '</td></tr>';
+      var body = document.getElementById("catalog-body");
+      body.replaceChildren();
+      var row = document.createElement("tr");
+      var cell = document.createElement("td");
+      cell.colSpan = 3;
+      cell.className = "me-empty";
+      cell.textContent = "Error loading mailboxes: " + safeText(err.message);
+      row.appendChild(cell);
+      body.appendChild(row);
     });
   }
 
@@ -100,10 +111,26 @@
     body.innerHTML = "";
     mailboxes.forEach(function (mb) {
       var tr = document.createElement("tr");
-      tr.innerHTML =
-        '<td><a href="#" class="me-address-link" data-address="' + mb.address + '">' + mb.address + '</a></td>' +
-        '<td><span class="me-badge">' + mb.status + '</span></td>' +
-        '<td><button type="button" class="me-view-btn" data-address="' + mb.address + '">View inbox</button></td>';
+      var addressCell = document.createElement("td");
+      var addressLink = document.createElement("a");
+      addressLink.href = "#";
+      addressLink.className = "me-address-link";
+      addressLink.dataset.address = safeText(mb.address);
+      addressLink.textContent = safeText(mb.address);
+      addressCell.appendChild(addressLink);
+      var statusCell = document.createElement("td");
+      var badge = document.createElement("span");
+      badge.className = "me-badge";
+      badge.textContent = safeText(mb.status);
+      statusCell.appendChild(badge);
+      var actionCell = document.createElement("td");
+      var viewButton = document.createElement("button");
+      viewButton.type = "button";
+      viewButton.className = "me-view-btn";
+      viewButton.dataset.address = safeText(mb.address);
+      viewButton.textContent = "View inbox";
+      actionCell.appendChild(viewButton);
+      tr.append(addressCell, statusCell, actionCell);
       body.appendChild(tr);
     });
     body.querySelectorAll(".me-address-link, .me-view-btn").forEach(function (el) {
@@ -142,13 +169,22 @@
       msgs.forEach(function (m) {
         var div = document.createElement("div");
         div.className = "me-message" + (m.read ? "" : " me-unread");
-        div.innerHTML =
-          '<div class="me-message-head">' +
-            '<span class="me-message-from">From: ' + m.sender + '</span>' +
-            '<span class="me-message-time">' + fmtTime(m.created_at) + '</span>' +
-          '</div>' +
-          '<div class="me-message-subject">' + (m.subject || "(no subject)") + '</div>' +
-          '<div class="me-message-body">' + (m.body || "") + '</div>';
+        var head = document.createElement("div");
+        head.className = "me-message-head";
+        var from = document.createElement("span");
+        from.className = "me-message-from";
+        from.textContent = "From: " + safeText(m.sender);
+        var when = document.createElement("span");
+        when.className = "me-message-time";
+        when.textContent = fmtTime(m.created_at);
+        head.append(from, when);
+        var subject = document.createElement("div");
+        subject.className = "me-message-subject";
+        subject.textContent = safeText(m.subject || "(no subject)");
+        var messageBody = document.createElement("div");
+        messageBody.className = "me-message-body";
+        messageBody.textContent = safeText(m.body);
+        div.append(head, subject, messageBody);
         if (!m.read) {
           var markBtn = document.createElement("button");
           markBtn.type = "button";
@@ -183,9 +219,13 @@
         var desc = e.action.toUpperCase();
         if (e.sender && e.recipient) desc += ": " + e.sender + " → " + e.recipient;
         if (e.subject) desc += ' — "' + e.subject + '"';
-        row.innerHTML =
-          '<span class="me-activity-time">' + fmtTime(e.timestamp) + '</span>' +
-          '<span class="me-activity-desc">' + desc + '</span>';
+        var activityTime = document.createElement("span");
+        activityTime.className = "me-activity-time";
+        activityTime.textContent = fmtTime(e.timestamp);
+        var activityDesc = document.createElement("span");
+        activityDesc.className = "me-activity-desc";
+        activityDesc.textContent = desc;
+        row.append(activityTime, activityDesc);
         list.appendChild(row);
       });
     });
