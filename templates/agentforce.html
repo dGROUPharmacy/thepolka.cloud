@@ -3,28 +3,31 @@
 {% block content %}
 <section class="content-page agentforce-page">
   <p class="eyebrow">A simpler path than a Salesforce safari</p>
-  <h1>Agentforce without the expedition.</h1>
-  <p class="lead">Start with one inspectable base agent, add only the specialized skins your workflow needs, and connect only the tools you approve. Clear scope, one-time pricing, and no maze of clouds, certifications, or bundled seats.</p>
+  <h1>Choose your agent ensemble.</h1>
+  <p class="lead">Each character has one clear specialty, an inspectable package, a downloadable ZIP, and standards-based adapters. Connections always require your explicit configuration and the destination system’s permission.</p>
   <div class="agent-buyer-strip"><strong>Built for:</strong><span>small service businesses</span><span>independent operators</span><span>lean sales teams</span><span>agencies</span></div>
-  {% if request.args.get("checkout") %}<p class="status-banner status-attention">Stripe checkout requires the corresponding Render environment variables. Downloads remain available below.</p>{% endif %}
-  <div class="agent-architecture"><strong>Polka Base Agent</strong><span>+</span><strong>Selected skin</strong><span>&rarr;</span><strong>Your approved tools</strong></div>
+  {% if request.args.get("checkout") %}<p class="status-banner status-attention">Stripe checkout requires the corresponding private Render variables. Downloads remain available below.</p>{% endif %}
+  <div class="agent-architecture"><strong>Polka Base Agent</strong><span>+</span><strong>Selected character</strong><span>&rarr;</span><strong>Your approved tools</strong></div>
   <div class="agent-product-grid">
   {% for slug, product in products.items() %}
     <article class="agent-product" id="{{ slug }}">
       <p class="agent-price">${{ product.price }} <small>one-time license</small></p>
-      <h2>{{ product.name }}</h2>
+      <h2>{{ product.character }} · {{ product.name }}</h2>
       <p>{{ product.description }}</p>
+      <p><span class="status-pill status-pass">Active</span> <span class="status-pill status-pass">Download ready</span> <span class="status-pill status-{{ 'pass' if product.connected else 'attention' }}">{{ product.connection_label }}</span></p>
       <ul>{% for skill in product.skills %}<li>{{ skill }}</li>{% endfor %}</ul>
+      <p class="small-note"><strong>Adapters:</strong> {{ product.adapters|join(', ') }}. Compatibility depends on the destination system’s API and permissions.</p>
       <div class="agent-actions">
-        <a class="cta-button" href="{{ url_for('agent_download', slug=slug) }}">Click to download</a>
+        <a class="cta-button" href="{{ url_for('agent_download', slug=slug) }}">Download package</a>
         <form method="post" action="{{ url_for('agent_checkout', slug=slug) }}"><button class="text-link" type="submit">Buy with Stripe &rarr;</button></form>
       </div>
+      <a class="text-link" href="{{ url_for('agent_page') }}#{{ slug }}">View evidence log &rarr;</a>
     </article>
   {% endfor %}
   </div>
   <section class="agent-operations">
-    <h2>Buy one useful outcome, then expand</h2>
-    <p>Begin with a focused skin for sales, advertising, social publishing, security, or daily housekeeping. The shared runtime keeps every addition inspectable and avoids rebuilding the foundation each time.</p>
+    <h2>What “integrates” means</h2>
+    <p>The packages exchange common REST, webhook, JSON, CSV, document, or workflow formats. They do not silently connect to every service. Each destination still needs a supported API, credentials, explicit consent, and a configured adapter.</p>
     <a class="text-link" href="{{ url_for('agent_page') }}">View operational evidence &rarr;</a>
   </section>
 </section>
