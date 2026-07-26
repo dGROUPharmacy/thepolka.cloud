@@ -1,0 +1,43 @@
+.agentforce-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.agentforce-page::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  right: -5rem;
+  top: 7vh;
+  width: min(42vw, 570px);
+  height: min(88vh, 920px);
+  background: url("../img/agentforce-stoplight.svg") right center / contain no-repeat;
+  opacity: .14;
+  pointer-events: none;
+  filter: saturate(.85);
+}
+
+.agentforce-page .agent-product,
+.agentforce-page .agent-operations {
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 760px) {
+  .agentforce-page::before {
+    right: -8rem;
+    width: 88vw;
+    opacity: .1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .agentforce-page::before {
+    animation: signal-breathe 5.5s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes signal-breathe {
+  from { opacity: .115; transform: scale(.99); }
+  to { opacity: .165; transform: scale(1.012); }
+}
