@@ -23,6 +23,14 @@
   </article>
   <article class="forecast-card moon-card"><div class="card-heading"><div><h2>Live Moon & Lunar Calendar</h2><p id="moon-today">Calculating today’s lunar phase…</p></div><div id="moon-symbol" class="moon-symbol" aria-hidden="true">◯</div></div><div id="moon-calendar" class="moon-calendar"></div></article>
   <p class="forecast-source">Data: NOAA/National Weather Service. Satellite: NOAA/NESDIS/STAR. Consult weather.gov for official warnings.</p>
+  <article class="forecast-card forecast-commercial-card" id="forecast-commercial">
+    <div class="card-heading"><div><p class="eyebrow">ThePolka.Cloud original</p><h2>Forecast Commercial</h2></div><a href="{{ url_for('static', filename='video/ThePolka-Cloud-Forecast-Commercial-Web.webm') }}" download>Download video</a></div>
+    <video controls playsinline preload="metadata" style="display:block;width:100%;height:auto;border-radius:18px;background:#06121b" aria-label="ThePolka.Cloud Forecast commercial">
+      <source src="{{ url_for('static', filename='video/ThePolka-Cloud-Forecast-Commercial-Web.webm') }}" type="video/webm">
+      Your browser does not support embedded video. <a href="{{ url_for('static', filename='video/ThePolka-Cloud-Forecast-Commercial-Web.webm') }}">Download the commercial.</a>
+    </video>
+    <p class="forecast-source">Commercial made with OpenAI. ThePolka.Cloud is independent of and not endorsed by NOAA or OpenAI.</p>
+  </article>
 </section>
 {% endblock %}
 {% block extra_js %}<script src="{{ url_for('static', filename='js/forecast.js') }}" defer></script>{% endblock %}
