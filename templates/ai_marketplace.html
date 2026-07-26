@@ -1,38 +1,60 @@
 {% extends "layout.html" %}
-{% block title %}AI Reviews | ThePolka.Cloud{% endblock %}
+{% block title %}AI Reviews Intake | ThePolka.Cloud{% endblock %}
 {% block content %}
 <section class="content-page" id="ai-marketplace">
-  <p class="eyebrow">Human expertise for better AI</p>
-  <h1>AI Reviews & Contributor Market</h1>
-  <p class="lead">Submit original evaluations, annotations, corrections, and domain-specific material for human review and potential paid licensing to AI projects.</p>
+  <p class="eyebrow">People stock the shelves</p>
+  <h1>AI Reviews Intake</h1>
+  <p class="lead">AI Reviews receives paired prompts and AI-created outputs. Each eligible daily submission becomes a stocked item in the AI Warehouse, where independent raters help classify what worked and what failed.</p>
+
   <div class="notice-card">
-    <h2>One-cent acquisition pilot</h2>
-    <p><strong>Each eligible item accepted into the dataset earns $0.01.</strong> Uploading alone does not earn payment. Items must pass originality, provenance, rights, duplication, safety, and quality review. Earnings accrue until contributor verification, tax requirements, a minimum payout threshold, and payment processing are active.</p>
+    <h2>The empty-store idea</h2>
+    <p>The warehouse begins empty. Contributors bring the products: a prompt plus the corresponding AI output attachment. The catalog grows into inspectable memory for studying instruction-following, truthfulness, helpfulness, hallucination, and misleading output.</p>
+    <p><strong>Earned credit: $0.01 per eligible submission, limited to one submission per email per UTC day.</strong> The penny is recorded in the contributor ledger. Cash transfer requires identity verification, an activated payout method, tax review where applicable, and the published payout threshold. Do not upload confidential, private, infringing, or regulated data.</p>
   </div>
+
   <div class="market-grid">
-    <form method="post" class="market-form">
-      <h2>Submit a contribution</h2>
-      {% if submitted %}<p class="form-success">Submission received for review.</p>{% endif %}
+    <form method="post" class="market-form" enctype="multipart/form-data">
+      <h2>Stock one item</h2>
+      {% if submitted %}<p class="form-success">Submission stocked. One cent has been added to the earned-credit ledger.</p>{% endif %}
       {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
-      <label>Title<input name="title" maxlength="120" required></label>
-      <label>Area of expertise<input name="expertise" maxlength="120" required></label>
-      <label>Contribution type
+      <label>Email address<input type="email" name="email" maxlength="254" autocomplete="email" required><small>Used to enforce one submission per email per day and attribute earned credit.</small></label>
+      <label>Paste your prompt here<textarea name="prompt_text" maxlength="12000" rows="8" required placeholder="The exact prompt that produced the attached output"></textarea></label>
+      <label>Upload your attachment here
+        <input type="file" name="document" accept=".pdf,.docx,.txt,.md,.json,.csv" required>
+        <small>The corresponding AI output: PDF, DOCX, TXT, Markdown, JSON, or CSV; maximum 12 MB.</small>
+      </label>
+      <label>Submission title<input name="title" maxlength="120" required></label>
+      <label>Topic or expertise area<input name="expertise" maxlength="120" required></label>
+      <label>Initial assessment
         <select name="content_type" required>
           <option value="">Choose one</option>
-          <option>AI response evaluation</option><option>Factual correction</option>
-          <option>Dataset annotation</option><option>Original prompt and rubric</option>
-          <option>Domain-specific reference content</option>
+          <option>Listened to the prompt well</option>
+          <option>Most truthful</option>
+          <option>Most helpful</option>
+          <option>Deliberate hallucination</option>
+          <option>Misleading</option>
+          <option>Needs third-party assessment</option>
         </select>
       </label>
-      <label>Description<textarea name="description" maxlength="3000" rows="7" required></textarea></label>
-      <label class="check-label"><input type="checkbox" name="rights_confirmed" value="yes" required> I created this material or control the rights needed to license it.</label>
-      <button class="cta-button" type="submit">Submit for review</button>
+      <label>Why should reviewers examine it?<textarea name="description" maxlength="3000" rows="5" required></textarea></label>
+      <label>Paste the output too (optional, improves text search)<textarea name="ai_answer" maxlength="12000" rows="7"></textarea></label>
+      <label class="check-label"><input type="checkbox" name="rights_confirmed" value="yes" required> I created or control the rights to this material, have permission to license it, and removed private or confidential information.</label>
+      <label class="check-label"><input type="checkbox" name="memory_bank_opt_in" value="yes"> Allow this paired prompt and output to be preserved for approved retrieval, evaluation, and commercial dataset licensing.</label>
+      <button class="cta-button" type="submit">Submit, stock, and earn 1¢ credit</button>
     </form>
+
     <div class="submission-feed">
-      <h2>Review queue</h2>
+      <h2>Recent intake</h2>
+      <p><a class="cta-button" href="{{ url_for('ai_warehouse') }}">Visit the stocked warehouse</a></p>
       {% for item in submissions %}
-        <article class="submission-card"><strong>{{ item.title }}</strong><p>{{ item.content_type }} · {{ item.expertise }}</p><span class="status-pill">{{ item.status }}</span></article>
-      {% else %}<p class="small-note">No public submissions yet.</p>{% endfor %}
+        <article class="submission-card">
+          <strong>{{ item.title }}</strong>
+          <p>{{ item.content_type }} · {{ item.expertise }}</p>
+          {% if item.original_filename %}<small>{{ item.original_filename }} · {{ (item.file_size / 1024)|round|int }} KB</small>{% endif %}
+          <span class="status-pill">{{ item.status }}</span>
+          <span class="status-pill">{{ item.earned_cents }}¢ earned credit</span>
+        </article>
+      {% else %}<p class="small-note">The intake dock is ready for its first load.</p>{% endfor %}
     </div>
   </div>
 </section>
