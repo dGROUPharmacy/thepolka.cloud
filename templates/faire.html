@@ -54,16 +54,15 @@
       <li>Automatic project folders, session records, artifacts, and backups</li>
       <li>Single-click navigation and quick double-click screensaver exit</li>
     </ul>
-    {% if request.args.get("checkout") %}<p class="faire-purchase__status">Checkout is temporarily unavailable. Contact sales@thepolka.cloud and we will help.</p>{% endif %}
     <p class="faire-purchase__note">“Lifetime” means perpetual use of the purchased version. Future major upgrades, support, third-party services, model weights, and custom development are not included.</p>
-    <form method="post" action="{{ url_for('faire_checkout') }}"><button class="faire-purchase__button" type="submit">Buy FAIRE OS for $500 — 50% off</button></form>
-    <a class="faire-purchase__contact" href="mailto:sales@thepolka.cloud?subject=FAIRE%20OS%20Commercial">Ask a compatibility question</a>
+    <a class="faire-purchase__button" href="mailto:sales@thepolka.cloud?subject=Purchase%20FAIRE%20OS%20Commercial%20for%20%24500&body=Hello%20ThePolka.Cloud%2C%0A%0AI%20would%20like%20to%20purchase%20FAIRE%20OS%20Commercial%201.0%20for%20the%20current%20one-time%20sale%20price%20of%20%24500.%0A%0AName%3A%0ACompany%3A%0APreferred%20payment%20method%3A%0AQuestions%3A%0A">Order FAIRE OS for $500 by email</a>
+    <a class="faire-purchase__contact" href="mailto:sales@thepolka.cloud?subject=FAIRE%20OS%20Compatibility%20Question">Ask a compatibility question</a>
   </section>
 
   <section class="faire-trial">
-    <p class="faire-page__eyebrow">Protected delivery</p>
-    <h2>Pay securely. Download immediately.</h2>
-    <p>Stripe processes payment. ThePolka.Cloud verifies the paid Checkout Session on the server before issuing a private, purchase-specific FAIRE download link.</p>
+    <p class="faire-page__eyebrow">Concierge purchase and delivery</p>
+    <h2>Order directly from ThePolka.Cloud.</h2>
+    <p>Email the sales team from the button above. We will confirm compatibility, arrange the $500 payment, and provide the private FAIRE OS download after payment is confirmed.</p>
   </section>
 </main>
 {% endblock %}

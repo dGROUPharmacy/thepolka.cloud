@@ -755,6 +755,25 @@ def agents_evidence_api():
     return jsonify(service="thepolka.cloud", checked_at=datetime.now(timezone.utc).isoformat(), agents=agent_statuses())
 
 
+@app.get("/api/faire/manifest")
+def faire_release_manifest_api():
+    catalog_payload = json.dumps(
+        {slug: product["skills"] for slug, product in AGENT_PRODUCTS.items()},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return jsonify(
+        product="FAIRE OS",
+        version="1.1.0",
+        channel="stable",
+        agent_catalog_revision=hashlib.sha256(catalog_payload.encode()).hexdigest()[:12],
+        agent_catalog_url=url_for("agents_evidence_api", _external=True),
+        release_page=url_for("ecosystem_page", page="faire", _external=True),
+        update_policy="notify-only; explicit user approval required",
+        checked_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
 @app.get("/api/agents/<slug>/evidence")
 def agent_evidence_api(slug):
     agents = agent_statuses()
