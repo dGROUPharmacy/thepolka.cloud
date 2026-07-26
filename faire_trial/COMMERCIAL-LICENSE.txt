@@ -1,0 +1,36 @@
+FAIRE OS COMMERCIAL END-USER LICENSE
+Version 1.0
+
+This package is licensed, not sold.
+
+ONE-TIME PURCHASE
+The purchaser receives a perpetual, non-transferable right to install and use
+the purchased version of FAIRE OS on devices they own or control.
+
+LIFETIME USE
+"Lifetime" means the purchaser may continue using the purchased version for
+as long as they choose. It does not promise lifetime support, compatibility,
+hosting, third-party services, model availability, or future upgrades.
+
+PERMITTED USE
+- Personal or internal business use.
+- Installation on devices owned or controlled by the purchaser.
+- Local documents, projects, browser portals, widgets, and local-model use.
+
+NOT PERMITTED
+- Reselling, sublicensing, publishing, or redistributing this package.
+- Removing product ownership notices.
+- Claiming ownership of FAIRE OS or its original product assets.
+
+AI AND THIRD-PARTY COMPONENTS
+FAIRE can use a compatible local model runtime without a paid cloud API.
+Local AI availability and performance depend on the purchaser's hardware,
+installed model runtime, and model. Web content and external services require
+Internet access and remain subject to their providers' terms. Bundled
+third-party components retain their respective licenses.
+
+WARRANTY
+FAIRE OS is provided as-is to the maximum extent permitted by law. The
+purchaser is responsible for backups and for reviewing generated output.
+
+Commercial seller: FAIRE OS / dGROUPharmacy

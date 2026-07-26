@@ -1,0 +1,19 @@
+FAIRE OS — QUICK START
+
+1. Extract the complete ZIP before installation.
+2. Right-click Install-Screensaver.cmd and choose Run as administrator.
+3. Select FaireOS in Windows Screen Saver Settings.
+4. Double-click Start-Faire.cmd to run FAIRE immediately.
+
+SCREENSAVER CONTROLS
+- Single click: navigate FAIRE.
+- Quick double-click: exit screensaver mode.
+- Escape: exit.
+
+LOCAL AI
+FAIRE's core commands work without a paid API. For open-ended private AI
+responses, install a compatible local Ollama runtime and the model named in
+faire-model.txt. No model weights are included in this download.
+
+SUPPORT CHECK
+Run Check-Setup.cmd to verify Windows PowerShell, WebView2, and package files.

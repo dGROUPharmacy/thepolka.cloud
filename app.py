@@ -5,6 +5,9 @@ import sqlite3
 import io
 import zipfile
 import json
+import secrets
+import hashlib
+import stripe
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
@@ -13,6 +16,7 @@ from zoneinfo import ZoneInfo
 
 from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.utils import secure_filename
 
 from resume_generator.normalize import normalize
 from resume_generator.renderer.markdown import render_markdown
@@ -30,8 +34,73 @@ app.config.update(
     SECRET_KEY=os.environ.get("SECRET_KEY", "development-only-change-me"),
     DATA_DIR=str(DATA_DIR),
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{DATA_DIR / 'users.db'}",
+    MAX_CONTENT_LENGTH=12 * 1024 * 1024,
 )
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+
+def faire_order_connection():
+    connection = sqlite3.connect(DATA_DIR / "faire_orders.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS orders (
+            checkout_session_id TEXT PRIMARY KEY,
+            download_token TEXT NOT NULL UNIQUE,
+            customer_email TEXT,
+            amount_total INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            payment_status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            download_count INTEGER NOT NULL DEFAULT 0,
+            last_downloaded_at TEXT
+        )"""
+    )
+    connection.commit()
+    return connection
+
+
+def stripe_session(session_id):
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    if not stripe.api_key:
+        raise RuntimeError("Stripe is not configured")
+    return stripe.checkout.Session.retrieve(session_id)
+
+
+def provision_faire_download(checkout_session):
+    metadata = dict(checkout_session.get("metadata") or {})
+    if metadata.get("product") != "faire-os":
+        return None
+    if checkout_session.get("payment_status") != "paid":
+        return None
+    if int(checkout_session.get("amount_total") or 0) != 50000:
+        app.logger.error("Refusing Faire fulfillment with unexpected amount")
+        return None
+    session_id = checkout_session["id"]
+    email = (checkout_session.get("customer_details") or {}).get("email") or ""
+    with faire_order_connection() as connection:
+        existing = connection.execute(
+            "SELECT download_token FROM orders WHERE checkout_session_id = ?", (session_id,)
+        ).fetchone()
+        if existing:
+            return existing["download_token"]
+        token = secrets.token_urlsafe(32)
+        connection.execute(
+            """INSERT INTO orders
+               (checkout_session_id, download_token, customer_email, amount_total,
+                currency, payment_status, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                session_id,
+                token,
+                email,
+                int(checkout_session.get("amount_total") or 0),
+                checkout_session.get("currency") or "usd",
+                checkout_session.get("payment_status") or "",
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+        connection.commit()
+        return token
 
 
 @app.after_request
@@ -89,7 +158,26 @@ def database_connection():
             created_at TEXT NOT NULL
         )"""
     )
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(contributions)")}
+    migrations = {
+        "original_filename": "TEXT NOT NULL DEFAULT ''",
+        "stored_filename": "TEXT NOT NULL DEFAULT ''",
+        "file_size": "INTEGER NOT NULL DEFAULT 0",
+        "file_sha256": "TEXT NOT NULL DEFAULT ''",
+        "memory_bank_opt_in": "INTEGER NOT NULL DEFAULT 0",
+        "ai_answer": "TEXT NOT NULL DEFAULT ''",
+        "raw_text": "TEXT NOT NULL DEFAULT ''",
+    }
+    for column, definition in migrations.items():
+        if column not in columns:
+            connection.execute(f"ALTER TABLE contributions ADD COLUMN {column} {definition}")
+    connection.commit()
     return connection
+
+
+AI_UPLOAD_EXTENSIONS = {".pdf", ".docx", ".txt", ".md", ".json", ".csv"}
+AI_UPLOAD_DIRECTORY = DATA_DIR / "ai_content_uploads"
+AI_UPLOAD_DIRECTORY.mkdir(parents=True, exist_ok=True)
 
 
 def mail_connection():
@@ -280,8 +368,22 @@ def tools_page():
     return render_template("tools.html", active="tools")
 
 
+@app.get("/research")
+def research_page():
+    return render_template("research.html", active="research")
+
+
+@app.get("/Research")
+def research_page_redirect():
+    return redirect(url_for("research_page"), code=301)
+
+
 @app.get("/faire/trial/download")
 def faire_trial_download():
+    return redirect(url_for("ecosystem_page", page="faire") + "#purchase", code=303)
+
+
+def faire_bundle_response():
     bundle = io.BytesIO()
     trial_directory = BASE_DIR / "faire_trial"
     with zipfile.ZipFile(bundle, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -289,7 +391,24 @@ def faire_trial_download():
             if path.is_file():
                 archive.write(path, f"Faire-Windows-Trial/{path.name}")
     bundle.seek(0)
-    return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name="faire-windows-offline-trial.zip")
+    return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name="FAIRE-OS-Commercial-1.0.0-LIFETIME.zip")
+
+
+@app.get("/faire/download/<token>")
+def faire_paid_download(token):
+    with faire_order_connection() as connection:
+        order = connection.execute(
+            "SELECT * FROM orders WHERE download_token = ?", (token,)
+        ).fetchone()
+        if not order or order["payment_status"] != "paid" or order["amount_total"] != 10000:
+            return render_template("faire_download.html", download_authorized=False), 403
+        connection.execute(
+            """UPDATE orders SET download_count = download_count + 1,
+               last_downloaded_at = ? WHERE download_token = ?""",
+            (datetime.now(timezone.utc).isoformat(), token),
+        )
+        connection.commit()
+    return faire_bundle_response()
 
 
 @app.post("/ilaw/register")
@@ -378,7 +497,11 @@ def ecosystem_page(page):
                 cad_error = str(exc)
         return render_template("cad.html", active="cad", cad_error=cad_error)
     if page == "faire":
-        return render_template("faire.html", active="faire")
+        return render_template(
+            "faire.html",
+            active="faire",
+            faire_youtube_video_id=os.environ.get("FAIRE_YOUTUBE_VIDEO_ID", "").strip(),
+        )
     if page == "directory":
         return render_template("directory.html", active="directory")
     title, description = ECOSYSTEM_PAGES[page]
@@ -503,16 +626,18 @@ def agent_checkout(slug):
 @app.post("/faire/checkout")
 def faire_checkout():
     secret = os.environ.get("STRIPE_SECRET_KEY", "")
-    price_id = os.environ.get("STRIPE_PRICE_FAIRE_DESKTOP", "")
-    if not secret or not price_id:
+    if not secret:
         return redirect(url_for("ecosystem_page", page="faire", checkout="configuration-required") + "#purchase")
     body = urlencode({
         "mode": "payment",
-        "line_items[0][price]": price_id,
+        "line_items[0][price_data][currency]": "usd",
+        "line_items[0][price_data][unit_amount]": 50000,
+        "line_items[0][price_data][product_data][name]": "FAIRE OS Commercial 1.0 — Lifetime License",
+        "line_items[0][price_data][product_data][description]": "One-time purchase. Perpetual use of the purchased FAIRE OS version for one owner.",
         "line_items[0][quantity]": 1,
-        "success_url": request.url_root.rstrip("/") + url_for("ecosystem_page", page="faire") + "?purchased=faire-desktop#purchase",
+        "success_url": request.url_root.rstrip("/") + url_for("faire_purchase_success") + "?session_id={CHECKOUT_SESSION_ID}",
         "cancel_url": request.url_root.rstrip("/") + url_for("ecosystem_page", page="faire") + "?cancelled=faire-desktop#purchase",
-        "metadata[product]": "faire-desktop",
+        "metadata[product]": "faire-os",
     }).encode()
     stripe_request = Request(
         "https://api.stripe.com/v1/checkout/sessions",
@@ -526,6 +651,45 @@ def faire_checkout():
     except Exception:
         app.logger.exception("Faire Desktop Stripe Checkout creation failed")
         return redirect(url_for("ecosystem_page", page="faire", checkout="failed") + "#purchase")
+
+
+@app.get("/faire/purchase/success")
+def faire_purchase_success():
+    session_id = request.args.get("session_id", "").strip()
+    if not session_id.startswith("cs_"):
+        return render_template("faire_download.html", download_authorized=False), 403
+    try:
+        checkout_session = stripe_session(session_id)
+        token = provision_faire_download(checkout_session)
+    except Exception:
+        app.logger.exception("Faire payment verification failed")
+        token = None
+    return render_template(
+        "faire_download.html",
+        download_authorized=bool(token),
+        download_url=url_for("faire_paid_download", token=token) if token else None,
+    )
+
+
+@app.post("/stripe/webhook")
+def stripe_webhook():
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+    if not webhook_secret:
+        return "Webhook not configured", 503
+    try:
+        event = stripe.Webhook.construct_event(
+            request.get_data(),
+            request.headers.get("Stripe-Signature", ""),
+            webhook_secret,
+        )
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return "Invalid webhook", 400
+    if event["type"] in {
+        "checkout.session.completed",
+        "checkout.session.async_payment_succeeded",
+    }:
+        provision_faire_download(event["data"]["object"])
+    return "", 200
 
 
 @app.post("/api/housekeeping/run")
@@ -566,20 +730,52 @@ def ai_marketplace():
         expertise = request.form.get("expertise", "").strip()[:120]
         content_type = request.form.get("content_type", "").strip()[:60]
         description = request.form.get("description", "").strip()[:3000]
+        ai_answer = request.form.get("ai_answer", "").strip()[:12000]
         rights_confirmed = request.form.get("rights_confirmed") == "yes"
-        if not all((title, expertise, content_type, description, rights_confirmed)):
-            error = "Complete every field and confirm you have the right to license the submission."
+        memory_bank_opt_in = request.form.get("memory_bank_opt_in") == "yes"
+        upload = request.files.get("document")
+        original_filename = secure_filename(upload.filename or "") if upload else ""
+        extension = Path(original_filename).suffix.lower()
+        if not all((title, expertise, content_type, description, rights_confirmed, upload, original_filename)):
+            error = "Complete every field, attach a document, and confirm you have the right to license it."
+        elif extension not in AI_UPLOAD_EXTENSIONS:
+            error = "Upload a PDF, DOCX, TXT, Markdown, JSON, or CSV document."
         else:
+            stored_filename = f"{secrets.token_hex(24)}{extension}"
+            stored_path = AI_UPLOAD_DIRECTORY / stored_filename
+            digest = hashlib.sha256()
+            file_size = 0
+            with stored_path.open("wb") as destination:
+                while chunk := upload.stream.read(1024 * 1024):
+                    file_size += len(chunk)
+                    digest.update(chunk)
+                    destination.write(chunk)
+            raw_text = ""
+            if extension in {".txt", ".md", ".json", ".csv"}:
+                raw_text = stored_path.read_text(encoding="utf-8", errors="replace")[:200000]
             with database_connection() as connection:
                 connection.execute(
-                    "INSERT INTO contributions (title, expertise, content_type, description, rights_confirmed, status, created_at) VALUES (?, ?, ?, ?, 1, 'submitted', ?)",
-                    (title, expertise, content_type, description, datetime.now(timezone.utc).isoformat()),
+                    """INSERT INTO contributions
+                       (title, expertise, content_type, description, rights_confirmed,
+                        status, created_at, original_filename, stored_filename,
+                        file_size, file_sha256, memory_bank_opt_in, ai_answer,
+                        raw_text)
+                       VALUES (?, ?, ?, ?, 1, 'submitted', ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        title, expertise, content_type, description,
+                        datetime.now(timezone.utc).isoformat(),
+                        original_filename, stored_filename, file_size,
+                        digest.hexdigest(), int(memory_bank_opt_in), ai_answer,
+                        raw_text,
+                    ),
                 )
             return redirect(url_for("ai_marketplace", submitted="1"))
 
     with database_connection() as connection:
         submissions = connection.execute(
-            "SELECT title, expertise, content_type, status, created_at FROM contributions ORDER BY id DESC LIMIT 20"
+            """SELECT title, expertise, content_type, status, created_at,
+                      original_filename, file_size, memory_bank_opt_in
+               FROM contributions ORDER BY id DESC LIMIT 20"""
         ).fetchall()
     return render_template(
         "ai_marketplace.html",
@@ -603,6 +799,54 @@ def ai_warehouse():
     return render_template("ai_warehouse.html", active="warehouse", catalog=catalog, counts=counts)
 
 
+@app.get("/ai-memory-bank")
+def ai_memory_bank():
+    query = request.args.get("q", "").strip()[:120]
+    with database_connection() as connection:
+        sql = """SELECT id, title, expertise, content_type, description, ai_answer,
+                        created_at, original_filename, file_size
+                 FROM contributions
+                 WHERE status = 'accepted' AND memory_bank_opt_in = 1"""
+        params = []
+        if query:
+            sql += """ AND (title LIKE ? OR expertise LIKE ? OR description LIKE ?
+                            OR ai_answer LIKE ? OR raw_text LIKE ?)"""
+            term = f"%{query}%"
+            params = [term, term, term, term, term]
+        sql += " ORDER BY id DESC LIMIT 100"
+        memories = connection.execute(sql, params).fetchall()
+        queued = connection.execute(
+            "SELECT COUNT(*) FROM contributions WHERE memory_bank_opt_in = 1 AND status = 'submitted'"
+        ).fetchone()[0]
+    return render_template(
+        "ai_memory_bank.html",
+        active="memory",
+        memories=memories,
+        queued=queued,
+        query=query,
+    )
+
+
+@app.get("/api/memory/search")
+def ai_memory_search_api():
+    query = request.args.get("q", "").strip()[:120]
+    if not query:
+        return jsonify(error="Add a search query."), 400
+    term = f"%{query}%"
+    with database_connection() as connection:
+        rows = connection.execute(
+            """SELECT id, title, expertise, content_type, description, ai_answer,
+                      original_filename, file_sha256
+               FROM contributions
+               WHERE status = 'accepted' AND memory_bank_opt_in = 1
+                 AND (title LIKE ? OR expertise LIKE ? OR description LIKE ?
+                      OR ai_answer LIKE ? OR raw_text LIKE ?)
+               ORDER BY id DESC LIMIT 20""",
+            (term, term, term, term, term),
+        ).fetchall()
+    return jsonify(query=query, count=len(rows), memories=[dict(row) for row in rows])
+
+
 @app.get("/health")
 def health():
     return jsonify(status="ok", service="thepolka.cloud"), 200
@@ -616,9 +860,9 @@ def robots():
 @app.get("/sitemap.xml")
 def sitemap():
     paths = [
-        "/", "/forecast", "/tools", "/apply", "/mylm", "/ilaw", "/java",
+        "/", "/forecast", "/tools", "/research", "/apply", "/mylm", "/ilaw", "/java",
         "/ecosystem/resume", "/ecosystem/cad", "/ecosystem/faire",
-        "/agent", "/agentforce", "/ai-marketplace", "/ai-warehouse", "/privacy",
+        "/agent", "/agentforce", "/ai-marketplace", "/ai-warehouse", "/ai-memory-bank", "/privacy",
     ]
     urls = "".join(f"<url><loc>https://thepolka.cloud{path}</loc></url>" for path in paths)
     return Response(f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>', mimetype="application/xml")

@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}Faire OS Download | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="/static/css/faire.css">{% endblock %}
+{% block content %}
+<main class="faire-page">
+  {% if download_authorized %}
+    <p class="faire-page__eyebrow">Payment verified</p>
+    <h1>Faire OS is ready.</h1>
+    <p>Your purchase-specific download is authorized. Keep this page private.</p>
+    <a class="faire-purchase__button" href="{{ download_url }}">Download Faire Screensaver OS</a>
+  {% else %}
+    <p class="faire-page__eyebrow">Payment not verified</p>
+    <h1>The download remains locked.</h1>
+    <p>No paid $500 FAIRE OS Checkout Session was verified. Return to the FAIRE page to purchase or retry.</p>
+    <a class="faire-purchase__button" href="{{ url_for('ecosystem_page', page='faire') }}#purchase">Return to Faire OS</a>
+  {% endif %}
+</main>
+{% endblock %}

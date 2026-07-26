@@ -29,6 +29,15 @@ body{
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .faire-page__header p{ color:var(--muted); font-size:1.1rem; max-width:560px; line-height:1.6; }
+.faire-page__header .faire-page__flagship{color:#fff;font-weight:800;font-size:clamp(1.15rem,2.5vw,1.55rem);max-width:none;margin-bottom:.35rem}
+.faire-commercial{margin:3rem 0 2rem}
+.faire-commercial__heading{text-align:center;margin-bottom:1.25rem}
+.faire-commercial__heading h2{font-size:clamp(1.8rem,4vw,3.2rem);margin:.2rem 0;color:#fff}
+.faire-commercial__player{position:relative;aspect-ratio:16/9;width:min(100%,980px);margin:auto;overflow:hidden;border-radius:26px;border:1px solid rgba(255,143,214,.55);background:#000;box-shadow:0 28px 90px rgba(0,0,0,.7),0 0 52px rgba(103,181,255,.18)}
+.faire-commercial__player iframe,.faire-commercial__player video{width:100%;height:100%;display:block;border:0;object-fit:cover}
+.faire-real-screen{margin:2rem auto 3.5rem;max-width:980px}
+.faire-real-screen img{display:block;width:100%;border-radius:22px;border:1px solid rgba(143,214,255,.35);box-shadow:0 22px 70px rgba(0,0,0,.62)}
+.faire-real-screen figcaption{text-align:center;color:var(--muted);padding:.9rem;font-size:.92rem}
 
 .faire-page__grid{
   display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:48px;
@@ -48,4 +57,14 @@ body{
   color:var(--muted);
 }
 .faire-page__cta strong{ color:var(--fg); }
+.faire-purchase{margin:3.5rem 0;padding:clamp(1.6rem,5vw,3.5rem);border-radius:30px;border:1px solid rgba(255,143,214,.48);background:radial-gradient(circle at 10% 0,rgba(255,77,190,.20),transparent 38%),linear-gradient(145deg,#17101f,#0b1724);box-shadow:0 30px 90px rgba(0,0,0,.48)}
+.faire-purchase h2{font-size:clamp(2rem,5vw,4rem);line-height:1.02;margin:.5rem 0 1rem}
+.faire-purchase__price{font-size:clamp(2.4rem,7vw,5.4rem);font-weight:900;color:#fff;letter-spacing:-.05em}
+.faire-purchase__price del{font-size:.45em;color:#8f849a;margin-right:.35rem}
+.faire-purchase__price small{display:block;font-size:.18em;letter-spacing:.08em;text-transform:uppercase;color:#9bf0dd}
+.faire-purchase li{margin:.55rem 0;color:#ded5ea}
+.faire-purchase__note{color:#9f93aa;font-size:.9rem;line-height:1.5}
+.faire-purchase__button{display:inline-block;border:0;border-radius:999px;padding:1rem 1.55rem;background:linear-gradient(90deg,#ff65c3,#8f7bff,#6ee7c8);color:#08060c;font-weight:900;font-size:1rem;text-decoration:none;cursor:pointer;box-shadow:0 12px 36px rgba(199,155,255,.3)}
+.faire-purchase__contact{display:inline-block;margin-left:1rem;color:#bcaee2}
+@media (max-width:680px){.faire-purchase__contact{display:block;margin:1rem 0 0}.faire-commercial__player{border-radius:16px}}
 .faire-trial{margin:3rem 0;padding:clamp(1.5rem,4vw,3rem);border:1px solid #6fcdbc;border-radius:28px;background:linear-gradient(135deg,#092238,#123b43);color:#eefcf9}.faire-trial h2{margin:.2rem 0;font-size:clamp(2rem,5vw,4rem)}.faire-trial>p:not(.faire-page__eyebrow){max-width:760px;line-height:1.6}.faire-trial__steps{display:flex;gap:.7rem;flex-wrap:wrap;margin:1.3rem 0}.faire-trial__steps span{padding:.7rem 1rem;border:1px solid rgba(255,255,255,.22);border-radius:999px}.faire-trial__steps b{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;margin-right:.4rem;border-radius:50%;background:#9bf0dd;color:#092238}.faire-trial__download{display:inline-block;margin:.5rem 0;text-decoration:none}.faire-trial .faire-purchase__note{color:#b8d6d2}

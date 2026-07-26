@@ -30,7 +30,9 @@ services:
         sync: false
       - key: STRIPE_PRICE_HOUSEKEEPING
         sync: false
-      - key: STRIPE_PRICE_FAIRE_DESKTOP
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: FAIRE_YOUTUBE_VIDEO_ID
         sync: false
       - key: STRIPE_PRICE_ILAW_CERTIFICATE
         sync: false
