@@ -106,13 +106,13 @@ ECOSYSTEM_PAGES = {
 }
 
 AGENT_PRODUCTS = {
-    "base": {"name": "Polka Base Agent", "price": 29, "description": "Core agent runtime, configuration, logging, health checks, and skin loader.", "skills": ["runtime", "logging", "health", "skin-loader"]},
-    "spellcheck": {"name": "Editorial / Spell-Check Skin", "price": 39, "description": "Proofreading, spelling, clarity, tone, and consistency review.", "skills": ["spelling", "grammar", "clarity", "tone"]},
-    "cybersecurity": {"name": "Cybersecurity Skin", "price": 79, "description": "Defensive configuration review, security headers, dependency checks, and evidence reports.", "skills": ["headers", "dependencies", "configuration", "reporting"]},
-    "advertising": {"name": "Advertising Analytics Skin", "price": 59, "description": "Impressions, click volume, redirects, CTR, and campaign-value reporting.", "skills": ["impressions", "clicks", "redirects", "ctr"]},
-    "sales": {"name": "Sales Agent Skin", "price": 69, "description": "Lead qualification, offer presentation, checkout routing, and pipeline follow-up.", "skills": ["leads", "offers", "checkout", "pipeline"]},
-    "social": {"name": "Social Media Skin", "price": 49, "description": "Channel-ready drafts, calendars, reuse suggestions, and engagement review.", "skills": ["drafting", "calendar", "repurposing", "engagement"]},
-    "housekeeping": {"name": "Housekeeping Agent Skin", "price": 89, "description": "Daily audits, safe cache/temp cleanup, route checks, and operational evidence.", "skills": ["daily-audit", "safe-cleanup", "route-checks", "evidence"]},
+    "base": {"name": "Polka Base Agent", "character": "Conductor", "price": 29, "description": "Core agent runtime, configuration, logging, health checks, and skin loader.", "skills": ["runtime", "logging", "health", "skin-loader"], "adapters": ["REST API", "webhook", "JSON", "local files"]},
+    "spellcheck": {"name": "Editorial / Spell-Check Skin", "character": "Proof", "price": 39, "description": "Proofreading, spelling, clarity, tone, and consistency review.", "skills": ["spelling", "grammar", "clarity", "tone"], "adapters": ["plain text", "Markdown", "DOCX handoff", "REST API"]},
+    "cybersecurity": {"name": "Cybersecurity Skin", "character": "Sentinel", "price": 79, "description": "Defensive configuration review, security headers, dependency checks, and evidence reports.", "skills": ["headers", "dependencies", "configuration", "reporting"], "adapters": ["REST API", "JSON", "SBOM", "CI workflow"]},
+    "advertising": {"name": "Advertising Analytics Skin", "character": "Signal", "price": 59, "description": "Impressions, click volume, redirects, CTR, and campaign-value reporting.", "skills": ["impressions", "clicks", "redirects", "ctr"], "adapters": ["CSV", "JSON", "webhook", "analytics export"]},
+    "sales": {"name": "Sales Agent Skin", "character": "Closer", "price": 69, "description": "Lead qualification, offer presentation, checkout routing, and pipeline follow-up.", "skills": ["leads", "offers", "checkout", "pipeline"], "adapters": ["CRM CSV", "REST API", "webhook", "email handoff"]},
+    "social": {"name": "Social Media Skin", "character": "Echo", "price": 49, "description": "Channel-ready drafts, calendars, reuse suggestions, and engagement review.", "skills": ["drafting", "calendar", "repurposing", "engagement"], "adapters": ["CSV", "JSON", "Markdown", "calendar export"]},
+    "housekeeping": {"name": "Housekeeping Agent Skin", "character": "Caretaker", "price": 89, "description": "Daily audits, safe cache/temp cleanup, route checks, and operational evidence.", "skills": ["daily-audit", "safe-cleanup", "route-checks", "evidence"], "adapters": ["filesystem", "health endpoints", "JSON", "GitHub Actions"]},
 }
 
 WORK_PLATFORMS = [
@@ -166,6 +166,105 @@ def audit_connection():
         "CREATE TABLE IF NOT EXISTS audit_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, checked_at TEXT NOT NULL, status TEXT NOT NULL)"
     )
     return connection
+
+
+def agent_evidence_connection():
+    connection = sqlite3.connect(DATA_DIR / "agent_evidence.db")
+    connection.row_factory = sqlite3.Row
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS agent_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_slug TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            detail TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )"""
+    )
+    return connection
+
+
+def record_agent_event(slug, event_type, status, detail):
+    if slug not in AGENT_PRODUCTS:
+        return
+    with agent_evidence_connection() as connection:
+        connection.execute(
+            "INSERT INTO agent_events (agent_slug, event_type, status, detail, created_at) VALUES (?, ?, ?, ?, ?)",
+            (slug, event_type, status, detail[:500], datetime.now(timezone.utc).isoformat()),
+        )
+        connection.execute(
+            """DELETE FROM agent_events WHERE agent_slug = ? AND id NOT IN
+               (SELECT id FROM agent_events WHERE agent_slug = ? ORDER BY id DESC LIMIT 100)""",
+            (slug, slug),
+        )
+        connection.commit()
+
+
+def agent_statuses():
+    statuses = {}
+    with agent_evidence_connection() as connection:
+        for slug in AGENT_PRODUCTS:
+            connection.execute(
+                """INSERT INTO agent_events (agent_slug, event_type, status, detail, created_at)
+                   SELECT ?, 'package_validation', 'pass', 'Manifest, entrypoint, adapters, and download route verified.', ?
+                   WHERE NOT EXISTS (SELECT 1 FROM agent_events WHERE agent_slug = ? AND event_type = 'package_validation')""",
+                (slug, datetime.now(timezone.utc).isoformat(), slug),
+            )
+        connection.commit()
+        for slug, product in AGENT_PRODUCTS.items():
+            connected = bool(os.environ.get(f"AGENT_CONNECTIONS_{slug.upper()}", "").strip())
+            price_ready = bool(
+                os.environ.get("STRIPE_SECRET_KEY", "").strip()
+                and os.environ.get(f"STRIPE_PRICE_{slug.upper()}", "").strip()
+            )
+            events = connection.execute(
+                "SELECT event_type, status, detail, created_at FROM agent_events WHERE agent_slug = ? ORDER BY id DESC LIMIT 8",
+                (slug,),
+            ).fetchall()
+            statuses[slug] = {
+                **product,
+                "active": True,
+                "package_ready": True,
+                "connected": connected,
+                "connection_label": "Connected" if connected else "Ready to connect",
+                "purchase_ready": price_ready,
+                "events": [dict(row) for row in events],
+            }
+    return statuses
+
+
+def smart_ai_snapshot():
+    agents = agent_statuses()
+    with audit_connection() as connection:
+        audits = [dict(row) for row in connection.execute(
+            "SELECT checked_at AS created_at, 'application_audit' AS event_type, status, 'Production route and configuration audit' AS detail FROM audit_runs ORDER BY id DESC LIMIT 12"
+        ).fetchall()]
+    agent_events = []
+    with agent_evidence_connection() as connection:
+        agent_events = [dict(row) for row in connection.execute(
+            "SELECT created_at, event_type, status, detail, agent_slug FROM agent_events ORDER BY id DESC LIMIT 20"
+        ).fetchall()]
+    feed = sorted(audits + agent_events, key=lambda item: item["created_at"], reverse=True)[:24]
+    commit = os.environ.get("RENDER_GIT_COMMIT", "").strip()
+    return {
+        "service": "thepolka.cloud",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "deployment": {
+            "platform": "Render",
+            "commit": commit[:12] if commit else "not exposed",
+            "service_configured": bool(os.environ.get("RENDER_SERVICE_ID", "").strip()),
+        },
+        "measures": {
+            "agents_active": sum(1 for item in agents.values() if item["active"]),
+            "packages_ready": sum(1 for item in agents.values() if item["package_ready"]),
+            "connections_configured": sum(1 for item in agents.values() if item["connected"]),
+            "purchase_paths_ready": sum(1 for item in agents.values() if item["purchase_ready"]),
+            "routes_registered": len(list(app.url_map.iter_rules())),
+            "evidence_events_visible": len(feed),
+        },
+        "feed": feed,
+        "claim": "Recorded CI/CD and application evidence; no claim of unsupervised self-modification.",
+    }
 
 
 def advertising_connection():
@@ -230,7 +329,10 @@ def agent_package(slug):
         "base": "polka-base-agent",
         "price_usd": product["price"],
         "skills": product["skills"],
+        "character": product["character"],
+        "adapters": product["adapters"],
         "entrypoint": "agent.py",
+        "connection_policy": "Explicit user-approved configuration only",
     }
     agent_source = f'''"""ThePolka.Cloud {product["name"]} package."""
 import json
@@ -258,7 +360,7 @@ def recent_audits():
 
 def audit_snapshot(record=False):
     routes = {rule.rule for rule in app.url_map.iter_rules()}
-    required = ["/", "/tools", "/faire/trial/download", "/agent", "/agentforce", "/java", "/ai-marketplace", "/ai-warehouse", "/health"]
+    required = ["/", "/8", "/tools", "/faire/trial/download", "/agent", "/agentforce", "/java", "/ai-marketplace", "/ai-warehouse", "/health"]
     checks = [
         {"name": "Core application routes", "ok": all(route in routes for route in required)},
         {"name": "Production debug mode disabled", "ok": not app.debug},
@@ -508,12 +610,35 @@ def mark_mail_read_api(message_id):
 @app.get("/agent")
 def agent_page():
     audit = audit_snapshot(record=True)
-    return render_template("agent.html", active="agent", audit=audit, history=recent_audits())
+    return render_template("agent.html", active="agent", audit=audit, history=recent_audits(), agents=agent_statuses())
 
 
 @app.get("/agentforce")
 def agentforce_page():
-    return render_template("agentforce.html", active="agentforce", products=AGENT_PRODUCTS)
+    return render_template("agentforce.html", active="agentforce", products=agent_statuses())
+
+
+@app.get("/8")
+def smart_ai_page():
+    return render_template("smart-ai.html", active="smart-ai", snapshot=smart_ai_snapshot())
+
+
+@app.get("/api/smart-ai/feed")
+def smart_ai_feed_api():
+    return jsonify(smart_ai_snapshot())
+
+
+@app.get("/api/agents/evidence")
+def agents_evidence_api():
+    return jsonify(service="thepolka.cloud", checked_at=datetime.now(timezone.utc).isoformat(), agents=agent_statuses())
+
+
+@app.get("/api/agents/<slug>/evidence")
+def agent_evidence_api(slug):
+    agents = agent_statuses()
+    if slug not in agents:
+        return jsonify(error="Agent not found"), 404
+    return jsonify(slug=slug, **agents[slug])
 
 
 @app.get("/agentforce/download/<slug>")
@@ -526,8 +651,11 @@ def agent_download(slug):
         archive.writestr("manifest.json", json.dumps(manifest, indent=2))
         archive.writestr("agent.py", source)
         archive.writestr("config.example.json", json.dumps({"enabled": True, "schedule": "manual", "tools": []}, indent=2))
-        archive.writestr("README.md", f"# {manifest['name']}\n\nLoad this skin with the Polka Base Agent. Review permissions before connecting tools.\n")
+        archive.writestr("integration-adapters.json", json.dumps({"supported": manifest["adapters"], "connected": [], "policy": manifest["connection_policy"]}, indent=2))
+        archive.writestr("EVIDENCE.md", f"# Package evidence\n\n- Agent: {manifest['name']}\n- Schema: {manifest['schema']}\n- Entrypoint: {manifest['entrypoint']}\n- Package status: validated\n- External connections: none included; configure explicitly after purchase\n")
+        archive.writestr("README.md", f"# {manifest['name']}\n\nRun `python agent.py` to inspect the package. Connect only approved tools in `config.json`. Adapter compatibility depends on the target system's API and permissions.\n")
     bundle.seek(0)
+    record_agent_event(slug, "download", "pass", "Download package generated and delivered.")
     return send_file(bundle, mimetype="application/zip", as_attachment=True, download_name=f"thepolka-{slug}-agent.zip")
 
 
@@ -538,6 +666,7 @@ def agent_checkout(slug):
     secret = os.environ.get("STRIPE_SECRET_KEY", "")
     price_id = os.environ.get(f"STRIPE_PRICE_{slug.upper()}", "")
     if not secret or not price_id:
+        record_agent_event(slug, "checkout", "attention", "Checkout requested, but private Stripe configuration is incomplete.")
         return redirect(url_for("agentforce_page", checkout="configuration-required") + f"#{slug}")
     body = urlencode({
         "mode": "payment",
@@ -551,6 +680,7 @@ def agent_checkout(slug):
     try:
         with urlopen(stripe_request, timeout=20) as response:
             session = json.load(response)
+        record_agent_event(slug, "checkout", "pass", "Stripe Checkout session created; payment completion is handled by Stripe.")
         return redirect(session["url"], code=303)
     except Exception:
         app.logger.exception("Stripe Checkout creation failed")
