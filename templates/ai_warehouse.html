@@ -5,6 +5,13 @@
   <p class="eyebrow">Automated shelves for paired prompt-output memory</p>
   <h1>AI Warehouse</h1>
   <p class="lead">AI Reviews is the intake dock. AI Warehouse stocks each consented prompt-output pair, then uses independent ratings to sort the catalog by instruction-following, truthfulness, helpfulness, hallucination, and misleading behavior.</p>
+  <div class="notice-card">
+    <p class="eyebrow">The automated-Walmart model</p>
+    <h2>The shelves fill themselves from reviewed deliveries.</h2>
+    <p>Contributors deliver paired prompts and outputs to AI Reviews. The Warehouse creates an inventory record, displays it for independent assessment, counts the votes, and automatically moves the item to its leading quality shelf. More deliveries create a deeper catalog; more ratings create stronger performance memory.</p>
+    <p><strong>Intake dock → stocked item → quality inspection → categorized shelf → licensable memory catalog.</strong></p>
+    <small>Retail analogy only; ThePolka.Cloud is not affiliated with or endorsed by Walmart.</small>
+  </div>
   <p><a class="cta-button" href="{{ url_for('ai_marketplace') }}">Stock a prompt + output</a> <a class="text-link" href="{{ url_for('ai_memory_bank') }}">Open searchable memory →</a></p>
   {% if rated %}<p class="form-success">Rating recorded and the shelf was recalculated.</p>{% endif %}
   {% if rating_error %}<p class="form-error">{{ rating_error }}</p>{% endif %}
