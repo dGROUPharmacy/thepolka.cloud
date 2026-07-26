@@ -12,9 +12,10 @@ jobs:
   housekeeping:
     runs-on: ubuntu-latest
     steps:
-      - name: Run safe cleanup and record audit
+      - name: Run read-only production audit
         run: |
-          curl --fail --retry 3 --retry-delay 10 --silent --show-error --request POST https://thepolka.cloud/api/housekeeping/run
+          curl --fail --retry 3 --retry-delay 10 --silent --show-error https://thepolka.cloud/health
+          curl --fail --retry 3 --retry-delay 10 --silent --show-error https://thepolka.cloud/api/audit
       - name: Verify Agentforce catalog and downloads
         run: |
           curl --fail --silent --show-error --output /dev/null https://thepolka.cloud/agentforce
