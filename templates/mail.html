@@ -5,10 +5,46 @@
 
 <header class="me-header">
   <h1>✉️ Mail Ecosystem</h1>
-  <p class="subhead">Identity-driven communication directory</p>
+  <p class="subhead">Domain mailbox operations, authenticated relay, and contact directory</p>
 </header>
 
 <main class="me-grid">
+
+  <section class="me-panel me-wide" id="panel-readiness">
+    <h2>Internet mail readiness</h2>
+    <p class="me-hint">The Python application receives authenticated provider webhooks. A managed mail provider must operate the public MX/SMTP edge because the Render web service does not expose inbound port 25.</p>
+    <div class="me-check-grid">
+      {% for check in mail_checks %}
+      <article class="me-check{% if check.ready %} me-check-ready{% endif %}">
+        <strong>{{ check.name }}</strong>
+        <span>{{ "Verified" if check.ready else "Configuration required" }}</span>
+        <small>{{ check.detail }}</small>
+      </article>
+      {% endfor %}
+    </div>
+    <p class="me-endpoint"><strong>Protected inbound relay:</strong> <code>{{ inbound_endpoint }}</code></p>
+  </section>
+
+  <section class="me-panel me-wide" id="panel-mail-map">
+    <h2>How your mail system connects</h2>
+    <div class="me-venn" role="img" aria-label="ThePolka.Cloud internal mail connects to external provider services through the internal identities Andrew at Google, Jake at State Farm, and Jack at OpenAI.">
+      <div class="me-venn-circle me-venn-internal">
+        <strong>Internal</strong>
+        <span>Mailboxes, inboxes, activity ledger, authenticated inbound relay</span>
+      </div>
+      <div class="me-venn-bridge">
+        <strong>Your bridge aliases</strong>
+        <span>andrew@google</span>
+        <span>jake@statefarm</span>
+        <span>jack@openai</span>
+      </div>
+      <div class="me-venn-circle me-venn-external">
+        <strong>External</strong>
+        <span>Provider SMTP, public MX, internet delivery, SPF, DKIM, DMARC</span>
+      </div>
+    </div>
+    <p class="me-hint">The overlap is an internal communication bridge. These identities work inside the Mail Ecosystem; public internet delivery still requires complete addresses controlled by the relevant provider.</p>
+  </section>
 
   <section class="me-panel" id="panel-catalog">
     <h2>Mailbox Catalog</h2>
@@ -123,6 +159,12 @@
       badge.className = "me-badge";
       badge.textContent = safeText(mb.status);
       statusCell.appendChild(badge);
+      if (mb.disclosure) {
+        var disclosure = document.createElement("small");
+        disclosure.className = "me-disclosure";
+        disclosure.textContent = safeText(mb.disclosure);
+        statusCell.appendChild(disclosure);
+      }
       var actionCell = document.createElement("td");
       var viewButton = document.createElement("button");
       viewButton.type = "button";
@@ -147,11 +189,14 @@
     senderSel.innerHTML = "";
     recipientSel.innerHTML = "";
     mailboxes.forEach(function (mb) {
-      var o1 = document.createElement("option");
-      o1.value = mb.address; o1.textContent = mb.address;
-      senderSel.appendChild(o1);
+      if (mb.mailbox_type !== "external-contact") {
+        var o1 = document.createElement("option");
+        o1.value = mb.address; o1.textContent = mb.address;
+        senderSel.appendChild(o1);
+      }
       var o2 = document.createElement("option");
-      o2.value = mb.address; o2.textContent = mb.address;
+      o2.value = mb.address;
+      o2.textContent = mb.address + (mb.mailbox_type === "external-contact" ? " (external alias)" : "");
       recipientSel.appendChild(o2);
     });
     if (mailboxes.length > 1) recipientSel.selectedIndex = 1;

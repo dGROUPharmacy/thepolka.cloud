@@ -57,6 +57,32 @@ body {
   padding: 20px;
 }
 .me-panel h2 { margin-top: 0; font-size: 18px; }
+.me-wide { grid-column: 1 / -1; }
+.me-check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.me-check { display: grid; gap: 5px; padding: 12px; border: 1px solid #d4a63d; border-radius: 8px; background: #fff8e7; }
+.me-check > span { color: #8a5a00; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+.me-check small { color: var(--me-muted); line-height: 1.35; }
+.me-check-ready { border-color: #7eb783; background: #eef8ef; }
+.me-check-ready > span { color: var(--me-ok); }
+.me-endpoint { margin-bottom: 0; overflow-wrap: anywhere; }
+.me-disclosure { display: block; max-width: 320px; margin-top: 5px; color: var(--me-muted); line-height: 1.3; }
+.me-venn { position: relative; width: min(760px, 100%); min-height: 330px; margin: 10px auto 18px; }
+.me-venn-circle {
+  position: absolute; top: 10px; width: 58%; min-height: 300px; border-radius: 50%;
+  display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 54px;
+  border: 2px solid var(--me-border);
+}
+.me-venn-circle strong { font-size: 20px; }
+.me-venn-circle span { max-width: 190px; font-size: 13px; line-height: 1.4; }
+.me-venn-internal { left: 0; align-items: flex-start; background: rgba(122, 31, 31, .12); }
+.me-venn-external { right: 0; align-items: flex-end; text-align: right; background: rgba(46, 125, 50, .12); }
+.me-venn-bridge {
+  position: absolute; z-index: 2; inset: 78px 31% auto;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 16px 8px; border-radius: 12px; background: var(--me-panel);
+  border: 1px solid var(--me-border);
+}
+.me-venn-bridge span { font-size: 12px; overflow-wrap: anywhere; }
 
 .me-table { width: 100%; border-collapse: collapse; }
 .me-table th, .me-table td {
@@ -164,3 +190,11 @@ body {
   .me-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 620px) {
+  .me-venn { display: grid; gap: 8px; min-height: 0; }
+  .me-venn-circle, .me-venn-bridge {
+    position: static; width: auto; min-height: 0; border-radius: 12px; padding: 16px;
+    align-items: flex-start; text-align: left;
+  }
+  .me-venn-circle span { max-width: none; }
+}

@@ -10,7 +10,11 @@ import hashlib
 import stripe
 import hmac
 import time
+import re
+import smtplib
+import ssl
 from collections import defaultdict, deque
+from email.message import EmailMessage
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
@@ -265,10 +269,86 @@ def mail_connection():
         CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT NOT NULL, recipient TEXT NOT NULL, subject TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, read INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE IF NOT EXISTS activity_log (id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL, action TEXT NOT NULL, sender TEXT, recipient TEXT, subject TEXT, detail TEXT);
     """)
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(mailboxes)")}
+    if "mailbox_type" not in columns:
+        connection.execute("ALTER TABLE mailboxes ADD COLUMN mailbox_type TEXT NOT NULL DEFAULT 'internal'")
+    if "disclosure" not in columns:
+        connection.execute("ALTER TABLE mailboxes ADD COLUMN disclosure TEXT NOT NULL DEFAULT ''")
     seeds = [("andy@alight", "Andy"), ("ericka@northwesternmutual", "Ericka"), ("michelle@amazon", "Michelle"), ("robert@ibm", "Robert"), ("katie@lyft", "Katie"), ("jordan@salesforce", "Jordan"), ("pia@netflix", "Pia"), ("marcus@intuit", "Marcus"), ("lena@stripe", "Lena")]
     connection.executemany("INSERT OR IGNORE INTO mailboxes (address, display_name) VALUES (?, ?)", seeds)
+    owned_mailboxes = [
+        ("info@thepolka.cloud", "Information"),
+        ("support@thepolka.cloud", "Support"),
+        ("sales@thepolka.cloud", "Sales"),
+    ]
+    connection.executemany(
+        """INSERT OR IGNORE INTO mailboxes
+           (address, display_name, status, mailbox_type, disclosure)
+           VALUES (?, ?, 'Pending mail-provider activation', 'domain-mailbox',
+                   'Owned domain address; internet delivery requires verified MX and inbound relay configuration.')""",
+        owned_mailboxes,
+    )
+    connection.execute(
+        """DELETE FROM mailboxes
+           WHERE address IN ('andrew@google.com', 'jake@statefarm.com', 'jack@openai.com')
+             AND mailbox_type='external-contact'
+             AND disclosure LIKE 'External alias supplied%'"""
+    )
+    requested_aliases = [
+        ("andrew@google", "Andrew", "Active", "Internal Mail Ecosystem identity; not an internet-deliverable email address."),
+        ("jake@statefarm", "Jake", "Active", "Internal Mail Ecosystem identity; not an internet-deliverable email address."),
+        ("jack@openai", "Jack", "Active", "Internal Mail Ecosystem identity; not an internet-deliverable email address."),
+    ]
+    connection.executemany(
+        """INSERT OR IGNORE INTO mailboxes
+           (address, display_name, status, mailbox_type, disclosure)
+           VALUES (?, ?, ?, 'internal-alias', ?)""",
+        requested_aliases,
+    )
     connection.commit()
     return connection
+
+
+def mail_readiness():
+    checks = [
+        ("MX records", "MAIL_MX_VERIFIED", "MX must point to the managed inbound mail provider, not a Render IP."),
+        ("SMTP transport", "SMTP_VERIFIED", "The provider must accept SMTP on port 25 or authenticated submission on 587."),
+        ("SPF", "SPF_VERIFIED", "Publish one SPF TXT record authorizing every legitimate sender."),
+        ("DKIM", "DKIM_VERIFIED", "Publish the selector and public key issued by the sending provider."),
+        ("DMARC", "DMARC_VERIFIED", "Start with reporting, review results, then increase enforcement."),
+        ("Inbound relay", "MAIL_INBOUND_VERIFIED", "Configure the provider to POST accepted mail to the protected inbound endpoint."),
+    ]
+    return [
+        {
+            "name": name,
+            "ready": os.environ.get(variable, "").lower() in {"1", "true", "yes"},
+            "detail": detail,
+        }
+        for name, variable, detail in checks
+    ]
+
+
+def send_via_smtp(sender, recipient, subject, body):
+    host = os.environ.get("SMTP_HOST", "").strip()
+    username = os.environ.get("SMTP_USERNAME", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "")
+    try:
+        port = int(os.environ.get("SMTP_PORT", "587"))
+    except ValueError:
+        port = 587
+    if not host or not username or not password:
+        raise RuntimeError("SMTP provider credentials are not configured")
+    message = EmailMessage()
+    message["From"] = sender
+    message["To"] = recipient
+    message["Subject"] = subject
+    message.set_content(body)
+    with smtplib.SMTP(host, port, timeout=20) as smtp:
+        smtp.ehlo()
+        smtp.starttls(context=ssl.create_default_context())
+        smtp.ehlo()
+        smtp.login(username, password)
+        smtp.send_message(message)
 
 
 def audit_connection():
@@ -663,7 +743,12 @@ def ecosystem_page(page):
     if page == "resume":
         return render_template("resume_generator.html", active="resume")
     if page == "mail":
-        return render_template("mail.html", active="mail")
+        return render_template(
+            "mail.html",
+            active="mail",
+            mail_checks=mail_readiness(),
+            inbound_endpoint=url_for("mail_inbound_api", _external=True),
+        )
     if page == "cad":
         model_path = BASE_DIR / "static" / "model" / "stand.glb"
         cad_error = None
@@ -709,7 +794,58 @@ def generate_resume():
 @app.get("/api/mailboxes")
 def mailboxes_api():
     with mail_connection() as db:
-        return jsonify([dict(row) for row in db.execute("SELECT address, display_name, status FROM mailboxes ORDER BY address")])
+        return jsonify([
+            dict(row) for row in db.execute(
+                "SELECT address, display_name, status, mailbox_type, disclosure FROM mailboxes ORDER BY address"
+            )
+        ])
+
+
+@app.get("/api/mail/readiness")
+def mail_readiness_api():
+    checks = mail_readiness()
+    return jsonify(
+        status="ready" if all(check["ready"] for check in checks) else "configuration-required",
+        checks=checks,
+        inbound_endpoint=url_for("mail_inbound_api", _external=True),
+        note="Render hosts the web application; a managed email provider must terminate public SMTP and relay inbound messages.",
+    )
+
+
+@app.post("/api/mail/inbound")
+def mail_inbound_api():
+    expected = os.environ.get("MAIL_INBOUND_TOKEN", "")
+    supplied = request.headers.get("X-Mail-Inbound-Token", "")
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        return jsonify(error="Inbound relay authorization required."), 403
+    data = request.get_json(silent=True) or request.form
+    sender = str(data.get("sender", "")).strip().lower()[:254]
+    recipient = str(data.get("recipient", "")).strip().lower()[:254]
+    subject = str(data.get("subject", ""))[:200]
+    body = str(data.get("body", data.get("text", "")))[:10000]
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", sender):
+        return jsonify(error="A valid sender is required."), 400
+    if not recipient.endswith("@thepolka.cloud"):
+        return jsonify(error="Recipient must be a thepolka.cloud mailbox."), 400
+    with mail_connection() as db:
+        known = db.execute(
+            "SELECT 1 FROM mailboxes WHERE lower(address)=? AND mailbox_type='domain-mailbox'",
+            (recipient,),
+        ).fetchone()
+        if not known:
+            return jsonify(error="Unknown domain mailbox."), 404
+        timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        db.execute(
+            "INSERT INTO messages (sender, recipient, subject, body, created_at) VALUES (?, ?, ?, ?, ?)",
+            (sender, recipient, subject, body, timestamp),
+        )
+        db.execute(
+            """INSERT INTO activity_log
+               (timestamp, action, sender, recipient, subject, detail)
+               VALUES (?, 'inbound-relay', ?, ?, ?, 'Accepted from authenticated mail provider relay.')""",
+            (timestamp, sender, recipient, subject),
+        )
+    return jsonify(status="accepted"), 202
 
 
 @app.get("/api/inbox/<path:address>")
@@ -735,11 +871,27 @@ def send_mail_api():
     if not sender or not recipient:
         return jsonify(error="Sender and recipient are required"), 400
     with mail_connection() as db:
-        known = db.execute("SELECT COUNT(*) FROM mailboxes WHERE address IN (?, ?)", (sender, recipient)).fetchone()[0]
-        if known != 2:
+        sender_row = db.execute("SELECT * FROM mailboxes WHERE address=?", (sender,)).fetchone()
+        recipient_row = db.execute("SELECT * FROM mailboxes WHERE address=?", (recipient,)).fetchone()
+        if not sender_row or not recipient_row:
             return jsonify(error="Unknown mailbox"), 400
         timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
         subject, body = str(data.get("subject", ""))[:200], str(data.get("body", ""))[:10000]
+        if recipient_row["mailbox_type"] == "external-contact":
+            if sender_row["mailbox_type"] != "domain-mailbox":
+                return jsonify(error="External mail must be sent from an owned @thepolka.cloud mailbox."), 400
+            try:
+                send_via_smtp(sender, recipient, subject, body)
+            except Exception:
+                app.logger.exception("SMTP delivery failed")
+                return jsonify(error="SMTP delivery failed or is not configured."), 503
+            db.execute(
+                """INSERT INTO activity_log
+                   (timestamp, action, sender, recipient, subject, detail)
+                   VALUES (?, 'smtp-delivered', ?, ?, ?, 'Accepted by configured SMTP transport.')""",
+                (timestamp, sender, recipient, subject),
+            )
+            return jsonify(status="accepted-by-smtp")
         db.execute("INSERT INTO messages (sender, recipient, subject, body, created_at) VALUES (?, ?, ?, ?, ?)", (sender, recipient, subject, body, timestamp))
         db.execute("INSERT INTO activity_log (timestamp, action, sender, recipient, subject, detail) VALUES (?, 'delivered', ?, ?, ?, 'Message routed to recipient inbox.')", (timestamp, sender, recipient, subject))
     return jsonify(status="delivered")
