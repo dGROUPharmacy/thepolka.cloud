@@ -37,16 +37,23 @@ document.addEventListener("DOMContentLoaded", () => {
     rail.setAttribute("aria-hidden", "true");
     const consist = document.createElement("div");
     consist.className = "polka-train-consist";
-    ["engine", "car", "car", "car", "car"].forEach((kind, index) => {
+    ["engine", "car", "car", "car", "car", "engine"].forEach((kind, index, parts) => {
       const part = document.createElement("span");
       part.className = `polka-train-${kind}`;
       if (kind === "car" && index === 4) part.classList.add("polka-train-caboose");
+      if (kind === "engine") {
+        const end = index === 0 ? "start" : "end";
+        part.classList.add(`polka-train-engine-${end}`);
+        const stack = document.createElement("i");
+        stack.className = "polka-train-smokestack";
+        part.appendChild(stack);
+        const steam = document.createElement("i");
+        steam.className = `polka-train-steam polka-train-steam-${end}`;
+        part.appendChild(steam);
+      }
       addWheels(part);
       consist.appendChild(part);
     });
-    const steam = document.createElement("span");
-    steam.className = "polka-train-steam";
-    consist.appendChild(steam);
     rail.appendChild(consist);
     document.body.appendChild(rail);
     return { rail, consist };
