@@ -16,9 +16,20 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=glass2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/menu-green.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/footer-socials.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sky-art.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
 <body>
+  <div class="sky-art" aria-hidden="true">
+    <span class="sky-jet sky-jet-one"><i></i></span>
+    <span class="sky-jet sky-jet-two"><i></i></span>
+    <span class="sky-jet sky-jet-three"><i></i></span>
+    <span class="sky-jet sky-jet-four"><i></i></span>
+    <span class="sky-bird sky-bird-one"></span>
+    <span class="sky-bird sky-bird-two"></span>
+    <span class="sky-bird sky-bird-three"></span>
+    <span class="sky-balloon"><i></i></span>
+  </div>
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-brand">

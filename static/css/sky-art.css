@@ -1,0 +1,152 @@
+.sky-art {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .62;
+}
+
+.app-container { position: relative; z-index: 1; }
+
+.sky-jet {
+  --size: 46px;
+  position: absolute;
+  left: -90px;
+  width: var(--size);
+  height: 9px;
+  border-radius: 70% 100% 45% 55%;
+  background: linear-gradient(90deg, #193f58, #5f93aa 72%, #e8f5f7);
+  box-shadow: -15px 2px 12px rgba(91, 153, 180, .25);
+  animation: jet-cross 24s linear infinite;
+}
+
+.sky-jet::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: -12px;
+  width: 22px;
+  height: 30px;
+  background: #315f77;
+  clip-path: polygon(38% 42%, 100% 0, 67% 47%, 100% 100%, 38% 59%, 0 64%, 0 36%);
+}
+
+.sky-jet::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: -6px;
+  border-right: 12px solid #244e65;
+  border-top: 6px solid transparent;
+}
+
+.sky-jet i {
+  position: absolute;
+  right: 5px;
+  top: 2px;
+  width: 9px;
+  height: 3px;
+  border-radius: 50%;
+  background: #d9f7ff;
+}
+
+.sky-jet-one { top: 13%; animation-delay: -3s; }
+.sky-jet-two { top: 31%; --size: 58px; animation-delay: -15s; animation-duration: 31s; }
+.sky-jet-three { top: 58%; --size: 39px; animation-delay: -8s; animation-duration: 27s; }
+.sky-jet-four { top: 78%; --size: 51px; animation-delay: -21s; animation-duration: 35s; }
+
+.sky-bird {
+  position: absolute;
+  left: -45px;
+  width: 25px;
+  height: 12px;
+  animation: bird-cross 38s linear infinite;
+}
+
+.sky-bird::before,
+.sky-bird::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  width: 14px;
+  height: 8px;
+  border-top: 2px solid #2f3a36;
+  border-radius: 60% 60% 0 0;
+}
+
+.sky-bird::before { left: 0; transform: rotate(17deg); }
+.sky-bird::after { right: 0; transform: rotate(-17deg); }
+.sky-bird-one { top: 22%; animation-delay: -11s; }
+.sky-bird-two { top: 47%; animation-delay: -29s; animation-duration: 44s; transform: scale(.72); }
+.sky-bird-three { top: 69%; animation-delay: -19s; animation-duration: 41s; transform: scale(.88); }
+
+.sky-balloon {
+  position: absolute;
+  right: 7vw;
+  top: 26vh;
+  width: 64px;
+  height: 78px;
+  border-radius: 52% 52% 46% 46%;
+  background: repeating-linear-gradient(90deg, #e26f58 0 11px, #f6c86d 11px 22px, #6fa4a4 22px 33px);
+  box-shadow: inset -9px -7px 18px rgba(30, 45, 52, .18), 0 15px 28px rgba(33, 75, 88, .16);
+  animation: balloon-float 11s ease-in-out infinite alternate;
+}
+
+.sky-balloon::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  bottom: -17px;
+  width: 28px;
+  height: 20px;
+  border-left: 1px solid #5e4b37;
+  border-right: 1px solid #5e4b37;
+}
+
+.sky-balloon::after {
+  content: "";
+  position: absolute;
+  left: 21px;
+  bottom: -25px;
+  width: 22px;
+  height: 10px;
+  border-radius: 2px 2px 5px 5px;
+  background: #76563c;
+}
+
+.sky-balloon i {
+  position: absolute;
+  left: 25px;
+  bottom: -4px;
+  width: 14px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff4cc;
+}
+
+@keyframes jet-cross {
+  from { transform: translateX(-10vw) rotate(-2deg); }
+  to { transform: translateX(120vw) rotate(-2deg); }
+}
+
+@keyframes bird-cross {
+  0% { transform: translateX(-10vw) translateY(0); }
+  45% { transform: translateX(55vw) translateY(-22px); }
+  100% { transform: translateX(120vw) translateY(8px); }
+}
+
+@keyframes balloon-float {
+  from { transform: translate3d(0, 0, 0) rotate(-2deg); }
+  to { transform: translate3d(-38px, -55px, 0) rotate(2deg); }
+}
+
+@media (max-width: 720px) {
+  .sky-art { opacity: .38; }
+  .sky-jet-three, .sky-jet-four, .sky-bird-three { display: none; }
+  .sky-balloon { right: 3vw; transform: scale(.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-art { display: none; }
+}
