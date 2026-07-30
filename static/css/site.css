@@ -35,6 +35,145 @@ body {
   mix-blend-mode: normal;
 }
 
+.polka-space-rim {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 78px;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 16%, rgba(255,255,255,.8) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 26% 9%, rgba(255,255,255,.6) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 51% 20%, rgba(255,255,255,.72) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 73% 11%, rgba(255,255,255,.7) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 91% 18%, rgba(255,255,255,.55) 0 1px, transparent 1.6px),
+    linear-gradient(180deg, rgba(5, 8, 23, .82) 0%, rgba(22, 38, 77, .48) 40%, rgba(68, 126, 165, .17) 72%, transparent 100%);
+  background-size: 190px 78px, 240px 78px, 280px 78px, 220px 78px, 320px 78px, 100% 100%;
+  box-shadow: inset 0 -1px 0 rgba(170, 222, 244, .2);
+}
+
+.polka-train-rail {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: .82;
+}
+
+.polka-train-vertical {
+  top: 0;
+  bottom: 0;
+  left: 274px;
+  width: 12px;
+  border-inline: 1px solid rgba(55, 49, 42, .48);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 8px, rgba(78, 62, 45, .62) 8px 11px),
+    linear-gradient(90deg, rgba(235,229,210,.72), rgba(255,255,255,.9), rgba(235,229,210,.72));
+}
+
+.polka-train-horizontal {
+  inset: auto 0 0 280px;
+  height: 12px;
+  border-block: 1px solid rgba(55, 49, 42, .48);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(78, 62, 45, .62) 11px 14px),
+    linear-gradient(180deg, rgba(235,229,210,.72), rgba(255,255,255,.9), rgba(235,229,210,.72));
+}
+
+.polka-train-consist {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  will-change: transform;
+}
+
+.polka-train-vertical .polka-train-consist {
+  left: 2px;
+  top: 15%;
+  flex-direction: column;
+}
+
+.polka-train-horizontal .polka-train-consist {
+  top: 2px;
+  left: 18%;
+}
+
+.polka-train-car,
+.polka-train-engine {
+  position: relative;
+  width: 15px;
+  height: 7px;
+  border: 1px solid rgba(45, 42, 38, .65);
+  border-radius: 2px;
+  background: #d98b48;
+  box-shadow: inset 0 1px rgba(255,255,255,.45);
+}
+
+.polka-train-vertical .polka-train-car,
+.polka-train-vertical .polka-train-engine {
+  width: 7px;
+  height: 15px;
+}
+
+.polka-train-car:nth-child(2n) { background: #3f7068; }
+.polka-train-car:nth-child(3n) { background: #7d32af; }
+.polka-train-engine { background: #7f2f2f; }
+
+.polka-train-engine::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 1px;
+  width: 3px;
+  height: 4px;
+  border-radius: 1px;
+  background: #242321;
+}
+
+.polka-train-vertical .polka-train-engine::after {
+  right: 1px;
+  top: -3px;
+  width: 4px;
+  height: 3px;
+}
+
+.polka-train-steam {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.75);
+  animation: polka-steam 4.8s ease-out infinite;
+}
+
+.polka-train-horizontal .polka-train-steam { right: -8px; top: -3px; }
+.polka-train-vertical .polka-train-steam { left: -3px; top: -9px; }
+
+@keyframes polka-steam {
+  0%, 70% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  76% { opacity: .75; }
+  100% { opacity: 0; transform: translate(8px, -10px) scale(1.8); }
+}
+
+* {
+  scrollbar-color: #7f2f2f #eee8d8;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar { width: 12px; height: 12px; }
+*::-webkit-scrollbar-track {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 7px, rgba(79,62,44,.45) 7px 9px),
+    #eee8d8;
+}
+*::-webkit-scrollbar-thumb {
+  border: 2px solid #eee8d8;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(90deg, #7f2f2f 0 9px, #d98b48 9px 18px, #3f7068 18px 27px);
+}
+
 .app-container {
   position: relative;
   z-index: 1;
@@ -52,6 +191,12 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .polka-weather-canvas { display: none; }
+  .polka-train-steam { animation: none; display: none; }
+}
+
+@media (max-width: 760px) {
+  .polka-train-vertical { display: none; }
+  .polka-train-horizontal { left: 0; }
 }
 
 /* ── Sidebar ──────────────────────────────────── */
