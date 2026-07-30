@@ -21,12 +21,37 @@ body {
   color: var(--text);
   font-family: var(--font);
   min-height: 100vh;
+  transition: background-color 1.2s ease, color 1.2s ease;
+}
+
+.polka-weather-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .66;
+}
+
+.app-container {
+  position: relative;
+  z-index: 1;
+}
+
+.main-column {
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(2px);
 }
 
 /* ── Layout shell ─────────────────────────────── */
 .app-container {
   display: flex;
   min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polka-weather-canvas { display: none; }
 }
 
 /* ── Sidebar ──────────────────────────────────── */
