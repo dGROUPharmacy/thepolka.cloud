@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const rail = document.createElement("div");
     rail.className = `polka-train-rail polka-train-${orientation}`;
     rail.setAttribute("aria-hidden", "true");
-
     const consist = document.createElement("div");
     consist.className = "polka-train-consist";
     ["engine", "car", "car", "car", "car"].forEach((kind, index) => {
@@ -45,16 +44,41 @@ document.addEventListener("DOMContentLoaded", () => {
       addWheels(part);
       consist.appendChild(part);
     });
-
     const steam = document.createElement("span");
     steam.className = "polka-train-steam";
     consist.appendChild(steam);
     rail.appendChild(consist);
     document.body.appendChild(rail);
+    return { rail, consist };
   }
 
-  createRail("vertical");
-  createRail("horizontal");
+  const vertical = createRail("vertical");
+  const horizontal = createRail("horizontal");
+  const sidebar = document.querySelector(".sidebar");
+
+  function updateTrainGeometry() {
+    const boundary = sidebar ? sidebar.getBoundingClientRect().right : 280;
+    vertical.rail.style.left = `${Math.round(boundary - vertical.rail.offsetWidth / 2)}px`;
+    horizontal.rail.style.left = `${Math.round(boundary)}px`;
+
+    const pageMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const sidebarMax = sidebar ? Math.max(1, sidebar.scrollHeight - sidebar.clientHeight) : 1;
+    const pageProgress = window.scrollY / pageMax;
+    const sidebarProgress = sidebar ? sidebar.scrollTop / sidebarMax : 0;
+    const verticalProgress = Math.min(1, Math.max(0, Math.max(pageProgress, sidebarProgress)));
+    const verticalTravel = Math.max(0, window.innerHeight - vertical.consist.offsetHeight - 24);
+    vertical.consist.style.transform = `translateY(${Math.round(verticalProgress * verticalTravel)}px)`;
+
+    const horizontalMax = Math.max(1, document.documentElement.scrollWidth - window.innerWidth);
+    const horizontalProgress = Math.min(1, Math.max(0, window.scrollX / horizontalMax));
+    const horizontalTravel = Math.max(0, window.innerWidth - boundary - horizontal.consist.offsetWidth - 24);
+    horizontal.consist.style.transform = `translateX(${Math.round(horizontalProgress * horizontalTravel)}px)`;
+  }
+
+  updateTrainGeometry();
+  window.addEventListener("scroll", updateTrainGeometry, { passive: true });
+  window.addEventListener("resize", updateTrainGeometry, { passive: true });
+  if (sidebar) sidebar.addEventListener("scroll", updateTrainGeometry, { passive: true });
 });
 
 document.addEventListener("DOMContentLoaded", () => {
