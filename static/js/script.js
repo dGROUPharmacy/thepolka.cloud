@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     particle.speed = .45 + Math.random() * 1.65;
     particle.size = .8 + Math.random() * 2.2;
     particle.drift = (Math.random() - .5) * .5;
-    particle.alpha = .08 + Math.random() * .16;
+    particle.alpha = .1 + Math.random() * .18;
   }
 
   function resize() {
@@ -85,8 +85,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const hour = new Date().getHours();
     const daylight = Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));
     const sky = context.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, `rgba(32, 66, 96, ${.1 * (1 - daylight)})`);
-    sky.addColorStop(1, `rgba(255, 190, 112, ${.06 * daylight})`);
+    sky.addColorStop(0, `rgba(32, 66, 96, ${.13 * (1 - daylight)})`);
+    sky.addColorStop(1, `rgba(255, 190, 112, ${.09 * daylight})`);
     context.fillStyle = sky;
     context.fillRect(0, 0, width, height);
 
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const y = cloud.y + Math.cos(time * .00006 + cloud.phase) * 46;
       const radius = cloud.radius * (1 + Math.sin(time * .00018 + cloud.phase) * .09);
       const glow = context.createRadialGradient(x, y, 0, x, y, radius);
-      glow.addColorStop(0, `rgba(${cloud.color.join(",")}, .105)`);
+      glow.addColorStop(0, `rgba(${cloud.color.join(",")}, .14)`);
       glow.addColorStop(1, `rgba(${cloud.color.join(",")}, 0)`);
       context.fillStyle = glow;
       context.beginPath();
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function drawWeather() {
-    particles.forEach((particle) => {
+    particles.forEach((particle, index) => {
       particle.y += particle.speed;
       particle.x += particle.drift;
 
@@ -121,11 +121,19 @@ document.addEventListener("DOMContentLoaded", () => {
         context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         context.fill();
       } else if (weatherMode === "mist") {
-        context.strokeStyle = `rgba(75, 145, 158, ${particle.alpha * .42})`;
+        context.strokeStyle = `rgba(75, 145, 158, ${particle.alpha * .58})`;
+        context.lineWidth = 1;
         context.beginPath();
         context.moveTo(particle.x, particle.y);
-        context.lineTo(particle.x + 34, particle.y);
+        context.lineTo(particle.x + 46, particle.y);
         context.stroke();
+        if (index % 9 === 0) {
+          context.strokeStyle = `rgba(55, 112, 158, ${particle.alpha * .75})`;
+          context.beginPath();
+          context.moveTo(particle.x + 12, particle.y - 4);
+          context.lineTo(particle.x + 9, particle.y + 8);
+          context.stroke();
+        }
       } else {
         context.fillStyle = `rgba(177, 112, 42, ${particle.alpha})`;
         context.save();
