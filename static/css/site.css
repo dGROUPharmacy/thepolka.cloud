@@ -218,17 +218,9 @@ body {
   100% { opacity: 0; transform: translate(-8px, -12px) scale(1.9); }
 }
 
-/* Native scrollbars match the railway instead of appearing as gray blocks. */
-* { scrollbar-color: #7d2025 #b6814d; scrollbar-width: thin; }
-*::-webkit-scrollbar { width: 14px; height: 14px; }
-*::-webkit-scrollbar-track {
-  background: repeating-linear-gradient(90deg, #b6814d 0 3px, #6b492f 3px 5px, #b6814d 5px 10px);
-}
-*::-webkit-scrollbar-thumb {
-  border: 2px solid #3b2a20;
-  border-radius: 7px;
-  background: linear-gradient(90deg, #7d2025 0 28%, #e2b84d 28% 40%, #2f746c 40% 68%, #d89436 68%);
-}
+/* The custom locomotive rail replaces native gray scrollbars; never draw both. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
 .app-container {
   position: relative;
