@@ -1,0 +1,17 @@
+.page-commercial {
+  margin-top: 3rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 1px solid rgba(108, 220, 155, 0.42);
+  border-radius: 24px;
+  background: rgba(5, 20, 16, 0.82);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.28);
+}
+
+.page-commercial video {
+  display: block;
+  width: 100%;
+  margin-top: 1.25rem;
+  border-radius: 16px;
+  background: #050807;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+}
