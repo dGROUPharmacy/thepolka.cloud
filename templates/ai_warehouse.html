@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}AI Warehouse | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/commercials.css') }}">{% endblock %}
 {% block content %}
 <section class="content-page" id="ai-warehouse">
   <p class="eyebrow">Automated shelves for paired prompt-output memory</p>
@@ -51,5 +52,15 @@
     <h2>Commercial evaluation access</h2>
     <p>Organizations can license approved, rights-cleared catalog slices for prompt-output evaluation and quality research. Raw contributor contact information is not part of the licensed catalog. Contact <a href="mailto:sales@thepolka.cloud">sales@thepolka.cloud</a> for a scoped assessment dataset.</p>
   </div>
+
+  <section class="page-commercial" aria-labelledby="ai-warehouse-commercial-title">
+    <p class="eyebrow">Watch the warehouse work</p>
+    <h2 id="ai-warehouse-commercial-title">How evidence becomes organized model value</h2>
+    <p>See how independent ratings organize paired prompt-output evidence for evaluation, stronger quality signals, and more valuable models.</p>
+    <video controls preload="metadata" playsinline>
+      <source src="{{ url_for('static', filename='video/ai-warehouse-commercial.webm') }}" type="video/webm">
+      Your browser does not support embedded video. <a href="{{ url_for('static', filename='video/ai-warehouse-commercial.webm') }}">Download the AI Warehouse commercial.</a>
+    </video>
+  </section>
 </section>
 {% endblock %}

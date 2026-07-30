@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}AI Reviews Intake | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/commercials.css') }}">{% endblock %}
 {% block content %}
 <section class="content-page" id="ai-marketplace">
   <p class="eyebrow">People stock the shelves</p>
@@ -61,5 +62,15 @@
       {% else %}<p class="small-note">The intake dock is ready for its first load.</p>{% endfor %}
     </div>
   </div>
+
+  <section class="page-commercial" aria-labelledby="ai-reviews-commercial-title">
+    <p class="eyebrow">Watch the idea in motion</p>
+    <h2 id="ai-reviews-commercial-title">How AI Reviews receives the inventory</h2>
+    <p>See how a rights-cleared prompt and output become reviewable evidence that can help make models more useful and more valuable.</p>
+    <video controls preload="metadata" playsinline>
+      <source src="{{ url_for('static', filename='video/ai-reviews-commercial.webm') }}" type="video/webm">
+      Your browser does not support embedded video. <a href="{{ url_for('static', filename='video/ai-reviews-commercial.webm') }}">Download the AI Reviews commercial.</a>
+    </video>
+  </section>
 </section>
 {% endblock %}
