@@ -40,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
   const clouds = [];
   const particles = [];
+  const aerialVehicles = [];
   let width = 0;
   let height = 0;
   let lastFrame = 0;
@@ -88,6 +89,19 @@ document.addEventListener("DOMContentLoaded", () => {
         resetParticle(particle, true);
         particles.push(particle);
       }
+      [
+        { type: "jet", active: true, speed: .72, scale: 34 },
+        { type: "rocket", active: false, speed: .42, scale: 28 },
+        { type: "balloon", active: false, speed: .28, scale: 32 }
+      ].forEach((vehicle, index) => {
+        aerialVehicles.push({
+          ...vehicle,
+          direction: index === 0 ? 1 : -1,
+          x: index === 0 ? -90 : width + 90,
+          y: height * (.12 + index * .12),
+          nextAppearance: performance.now() + 9000 + Math.random() * 18000
+        });
+      });
     }
   }
 
@@ -155,6 +169,132 @@ document.addEventListener("DOMContentLoaded", () => {
     context.fill();
     context.stroke();
     context.restore();
+  }
+
+  function drawJet(vehicle) {
+    context.save();
+    context.translate(vehicle.x, vehicle.y);
+    context.scale(vehicle.direction, 1);
+    context.fillStyle = "rgba(58, 78, 92, .58)";
+    context.strokeStyle = "rgba(255, 255, 255, .3)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(vehicle.scale * .92, 0);
+    context.lineTo(vehicle.scale * .18, -vehicle.scale * .12);
+    context.lineTo(-vehicle.scale * .68, -vehicle.scale * .09);
+    context.lineTo(-vehicle.scale * .92, 0);
+    context.lineTo(-vehicle.scale * .68, vehicle.scale * .09);
+    context.lineTo(vehicle.scale * .18, vehicle.scale * .12);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.beginPath();
+    context.moveTo(-vehicle.scale * .12, 0);
+    context.lineTo(-vehicle.scale * .55, -vehicle.scale * .48);
+    context.lineTo(vehicle.scale * .18, -vehicle.scale * .08);
+    context.lineTo(-vehicle.scale * .55, vehicle.scale * .48);
+    context.closePath();
+    context.fill();
+    context.restore();
+  }
+
+  function drawRocket(vehicle) {
+    context.save();
+    context.translate(vehicle.x, vehicle.y);
+    context.rotate(-1.08 * vehicle.direction);
+    context.fillStyle = "rgba(86, 91, 112, .58)";
+    context.beginPath();
+    context.moveTo(vehicle.scale * .72, 0);
+    context.quadraticCurveTo(vehicle.scale * .48, -vehicle.scale * .2, 0, -vehicle.scale * .16);
+    context.lineTo(-vehicle.scale * .58, -vehicle.scale * .12);
+    context.lineTo(-vehicle.scale * .58, vehicle.scale * .12);
+    context.lineTo(0, vehicle.scale * .16);
+    context.quadraticCurveTo(vehicle.scale * .48, vehicle.scale * .2, vehicle.scale * .72, 0);
+    context.fill();
+    context.fillStyle = "rgba(238, 139, 70, .48)";
+    context.beginPath();
+    context.moveTo(-vehicle.scale * .58, -vehicle.scale * .08);
+    context.lineTo(-vehicle.scale * 1.05, 0);
+    context.lineTo(-vehicle.scale * .58, vehicle.scale * .08);
+    context.closePath();
+    context.fill();
+    context.restore();
+  }
+
+  function drawBalloon(vehicle) {
+    context.save();
+    context.translate(vehicle.x, vehicle.y);
+    const sway = Math.sin(vehicle.y * .018) * .08;
+    context.rotate(sway);
+    const gradient = context.createLinearGradient(
+      -vehicle.scale * .5,
+      0,
+      vehicle.scale * .5,
+      0
+    );
+    gradient.addColorStop(0, "rgba(226, 92, 132, .58)");
+    gradient.addColorStop(.5, "rgba(242, 139, 74, .62)");
+    gradient.addColorStop(1, "rgba(125, 50, 175, .54)");
+    context.fillStyle = gradient;
+    context.beginPath();
+    context.ellipse(0, 0, vehicle.scale * .52, vehicle.scale * .68, 0, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = "rgba(70, 66, 62, .48)";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(-vehicle.scale * .22, vehicle.scale * .55);
+    context.lineTo(-vehicle.scale * .12, vehicle.scale * .92);
+    context.moveTo(vehicle.scale * .22, vehicle.scale * .55);
+    context.lineTo(vehicle.scale * .12, vehicle.scale * .92);
+    context.stroke();
+    context.fillStyle = "rgba(112, 78, 48, .62)";
+    context.fillRect(
+      -vehicle.scale * .18,
+      vehicle.scale * .88,
+      vehicle.scale * .36,
+      vehicle.scale * .24
+    );
+    context.restore();
+  }
+
+  function drawAerialVehicles(time) {
+    aerialVehicles.forEach((vehicle) => {
+      if (!vehicle.active) {
+        const activeCount = aerialVehicles.filter((item) => item.active).length;
+        if (time >= vehicle.nextAppearance && activeCount < 2) {
+          vehicle.active = true;
+          vehicle.direction = Math.random() < .5 ? -1 : 1;
+          if (vehicle.type === "balloon") {
+            vehicle.x = width * (.18 + Math.random() * .64);
+            vehicle.y = height + 90;
+          } else {
+            vehicle.x = vehicle.direction > 0 ? -90 : width + 90;
+            vehicle.y = height * (.08 + Math.random() * .23);
+          }
+        }
+        return;
+      }
+
+      if (vehicle.type === "balloon") {
+        vehicle.x += Math.sin(time * .00034) * .12;
+        vehicle.y -= vehicle.speed;
+        drawBalloon(vehicle);
+      } else {
+        vehicle.x += vehicle.speed * vehicle.direction;
+      }
+      if (vehicle.type === "rocket") {
+        vehicle.y -= vehicle.speed * .72;
+        drawRocket(vehicle);
+      } else if (vehicle.type === "jet") {
+        vehicle.y += Math.sin(time * .00045) * .06;
+        drawJet(vehicle);
+      }
+
+      if (vehicle.x < -120 || vehicle.x > width + 120 || vehicle.y < -100) {
+        vehicle.active = false;
+        vehicle.nextAppearance = time + 14000 + Math.random() * 26000;
+      }
+    });
   }
 
   function drawWeather() {
@@ -255,6 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
     context.clearRect(0, 0, width, height);
     drawSky(time);
     drawWeather();
+    drawAerialVehicles(time);
     requestAnimationFrame(animate);
   }
 
