@@ -111,6 +111,48 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function drawHummingbird(x, y, size, angle, alpha, wingPhase, colorIndex) {
+    const lift = Math.sin(wingPhase * 3.4) * size * .7;
+    const color = colors[colorIndex % colors.length];
+    context.save();
+    context.translate(x, y);
+    context.rotate(angle);
+    context.fillStyle = `rgba(${color.join(",")}, ${alpha})`;
+    context.strokeStyle = `rgba(30, 66, 62, ${Math.min(1, alpha + .18)})`;
+    context.lineWidth = Math.max(.8, size * .12);
+    context.lineCap = "round";
+
+    context.beginPath();
+    context.ellipse(0, 0, size * .58, size * .28, -.12, 0, Math.PI * 2);
+    context.fill();
+
+    context.beginPath();
+    context.moveTo(size * .48, -size * .04);
+    context.lineTo(size * 1.55, -size * .18);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(-size * .18, 0);
+    context.quadraticCurveTo(-size * .55, -size * 1.05, -size * .08, -size * .3 + lift);
+    context.moveTo(-size * .1, size * .04);
+    context.quadraticCurveTo(-size * .7, size * .8, -size * .18, size * .25 - lift * .35);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(-size * .5, 0);
+    context.lineTo(-size * 1.05, -size * .28);
+    context.lineTo(-size * .84, size * .18);
+    context.closePath();
+    context.fill();
+
+    context.beginPath();
+    context.arc(size * .3, -size * .09, Math.max(.7, size * .055), 0, Math.PI * 2);
+    context.fillStyle = `rgba(20, 30, 28, ${Math.min(1, alpha + .3)})`;
+    context.fill();
+    context.stroke();
+    context.restore();
+  }
+
   function drawWeather() {
     for (let first = 0; first < particles.length; first += 1) {
       for (let second = first + 1; second < particles.length; second += 1) {
@@ -143,22 +185,35 @@ document.addEventListener("DOMContentLoaded", () => {
         context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         context.fill();
       } else if (weatherMode === "mist") {
-        context.strokeStyle = `rgba(53, 132, 148, ${particle.alpha * .82})`;
-        context.lineWidth = 1.5;
-        context.save();
-        context.translate(particle.x, particle.y);
-        context.rotate(particle.angle);
-        context.beginPath();
-        context.moveTo(-particle.length / 2, 0);
-        context.lineTo(particle.length / 2, 0);
-        context.stroke();
-        context.restore();
-        if (index % 9 === 0) {
-          context.strokeStyle = `rgba(55, 112, 158, ${particle.alpha * .75})`;
-          context.beginPath();
-          context.moveTo(particle.x + 12, particle.y - 4);
-          context.lineTo(particle.x + 9, particle.y + 8);
-          context.stroke();
+        const birdSize = 3.5 + particle.size * 2.2;
+        const wingPhase = particle.y * .055 + particle.bob;
+        drawHummingbird(
+          particle.x,
+          particle.y,
+          birdSize,
+          particle.angle * .45,
+          particle.alpha + .18,
+          wingPhase,
+          index
+        );
+        if (index % 12 === 0) {
+          const spacing = birdSize * 2.6;
+          [
+            [-spacing, spacing * .7],
+            [-spacing * 2, spacing * 1.4],
+            [spacing, spacing * .7],
+            [spacing * 2, spacing * 1.4]
+          ].forEach(([offsetX, offsetY], flockIndex) => {
+            drawHummingbird(
+              particle.x + offsetX,
+              particle.y + offsetY,
+              birdSize * (.78 + flockIndex * .035),
+              particle.angle * .35,
+              particle.alpha + .12,
+              wingPhase + flockIndex * .7,
+              index + flockIndex + 1
+            );
+          });
         }
       } else {
         context.fillStyle = `rgba(177, 112, 42, ${particle.alpha})`;
