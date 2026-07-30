@@ -23,50 +23,38 @@ document.addEventListener("DOMContentLoaded", () => {
   spaceRim.setAttribute("aria-hidden", "true");
   document.body.prepend(spaceRim);
 
+  function addWheels(part) {
+    ["a", "b"].forEach((position) => {
+      const wheel = document.createElement("i");
+      wheel.className = `polka-train-wheel polka-train-wheel-${position}`;
+      part.appendChild(wheel);
+    });
+  }
+
   function createRail(orientation) {
     const rail = document.createElement("div");
     rail.className = `polka-train-rail polka-train-${orientation}`;
     rail.setAttribute("aria-hidden", "true");
+
     const consist = document.createElement("div");
     consist.className = "polka-train-consist";
-    ["engine", "car", "car", "car", "car", "engine"].forEach((kind) => {
+    ["engine", "car", "car", "car", "car"].forEach((kind, index) => {
       const part = document.createElement("span");
       part.className = `polka-train-${kind}`;
+      if (kind === "car" && index === 4) part.classList.add("polka-train-caboose");
+      addWheels(part);
       consist.appendChild(part);
     });
+
     const steam = document.createElement("span");
     steam.className = "polka-train-steam";
     consist.appendChild(steam);
     rail.appendChild(consist);
     document.body.appendChild(rail);
-    return consist;
   }
 
-  const verticalTrain = createRail("vertical");
-  const horizontalTrain = createRail("horizontal");
-
-  function moveTrains() {
-    const pageRange = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    const pageProgress = Math.min(1, Math.max(0, window.scrollY / pageRange));
-    verticalTrain.style.transform = `translateY(${pageProgress * Math.max(0, window.innerHeight - 150)}px)`;
-
-    const horizontalRange = Math.max(1, document.documentElement.scrollWidth - window.innerWidth);
-    const horizontalProgress = Math.min(1, Math.max(0, window.scrollX / horizontalRange));
-    horizontalTrain.style.transform = `translateX(${horizontalProgress * Math.max(0, window.innerWidth - 240)}px)`;
-  }
-
-  moveTrains();
-  window.addEventListener("scroll", moveTrains, { passive: true });
-  window.addEventListener("resize", moveTrains, { passive: true });
-
-  const sidebar = document.querySelector(".sidebar");
-  if (sidebar) {
-    sidebar.addEventListener("scroll", () => {
-      const range = Math.max(1, sidebar.scrollHeight - sidebar.clientHeight);
-      const progress = Math.min(1, sidebar.scrollTop / range);
-      verticalTrain.style.transform = `translateY(${progress * Math.max(0, window.innerHeight - 150)}px)`;
-    }, { passive: true });
-  }
+  createRail("vertical");
+  createRail("horizontal");
 });
 
 document.addEventListener("DOMContentLoaded", () => {
