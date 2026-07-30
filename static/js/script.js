@@ -48,11 +48,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetParticle(particle, initial) {
     particle.x = Math.random() * width;
-    particle.y = initial ? Math.random() * height : -24;
+    particle.direction = Math.random() < .28 ? -1 : 1;
+    particle.y = initial
+      ? Math.random() * height
+      : particle.direction > 0 ? -24 : height + 24;
     particle.speed = 1.1 + Math.random() * 2.1;
     particle.size = .8 + Math.random() * 2.2;
     particle.drift = (Math.random() - .5) * .5;
     particle.alpha = .2 + Math.random() * .2;
+    particle.length = 22 + Math.random() * 54;
+    particle.angle = (Math.random() - .5) * .48;
+    particle.spin = (Math.random() - .5) * .012;
+    particle.bob = Math.random() * Math.PI * 2;
   }
 
   function resize() {
@@ -105,9 +112,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function drawWeather() {
+    for (let first = 0; first < particles.length; first += 1) {
+      for (let second = first + 1; second < particles.length; second += 1) {
+        const dx = particles[first].x - particles[second].x;
+        const dy = particles[first].y - particles[second].y;
+        if ((dx * dx) + (dy * dy) < 150) {
+          const drift = particles[first].drift;
+          particles[first].drift = particles[second].drift;
+          particles[second].drift = drift;
+          particles[first].angle += .035;
+          particles[second].angle -= .035;
+        }
+      }
+    }
+
     particles.forEach((particle, index) => {
-      particle.y += particle.speed;
-      particle.x += particle.drift;
+      particle.y += particle.speed * particle.direction;
+      particle.x += particle.drift + Math.sin(particle.y * .015 + particle.bob) * .18;
+      particle.angle += particle.spin;
 
       if (weatherMode === "rain") {
         context.strokeStyle = `rgba(55, 112, 158, ${particle.alpha})`;
@@ -123,10 +145,14 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (weatherMode === "mist") {
         context.strokeStyle = `rgba(53, 132, 148, ${particle.alpha * .82})`;
         context.lineWidth = 1.5;
+        context.save();
+        context.translate(particle.x, particle.y);
+        context.rotate(particle.angle);
         context.beginPath();
-        context.moveTo(particle.x, particle.y);
-        context.lineTo(particle.x + 64, particle.y);
+        context.moveTo(-particle.length / 2, 0);
+        context.lineTo(particle.length / 2, 0);
         context.stroke();
+        context.restore();
         if (index % 9 === 0) {
           context.strokeStyle = `rgba(55, 112, 158, ${particle.alpha * .75})`;
           context.beginPath();
@@ -143,7 +169,12 @@ document.addEventListener("DOMContentLoaded", () => {
         context.restore();
       }
 
-      if (particle.y > height + 30 || particle.x < -40 || particle.x > width + 40) {
+      if (
+        particle.y > height + 30 ||
+        particle.y < -30 ||
+        particle.x < -60 ||
+        particle.x > width + 60
+      ) {
         resetParticle(particle, false);
       }
     });
