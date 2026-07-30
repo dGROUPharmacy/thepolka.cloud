@@ -47,12 +47,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherMode = month === 11 || month < 2 ? "snow" : month < 5 ? "rain" : month < 8 ? "mist" : "leaves";
 
   function resetParticle(particle, initial) {
-    particle.x = Math.random() * width;
+    particle.flightDirection = Math.random() < .5 ? -1 : 1;
+    particle.x = initial
+      ? Math.random() * width
+      : particle.flightDirection > 0 ? -36 : width + 36;
     particle.direction = Math.random() < .28 ? -1 : 1;
-    particle.y = initial
-      ? Math.random() * height
-      : particle.direction > 0 ? -24 : height + 24;
+    particle.y = Math.random() * height;
     particle.speed = 1.1 + Math.random() * 2.1;
+    particle.horizontalSpeed = .8 + Math.random() * 1.55;
+    particle.verticalDrift = (Math.random() - .5) * .42;
     particle.size = .8 + Math.random() * 2.2;
     particle.drift = (Math.random() - .5) * .5;
     particle.alpha = .2 + Math.random() * .2;
@@ -80,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
           color
         });
       });
-      for (let index = 0; index < 48; index += 1) {
+      for (let index = 0; index < 30; index += 1) {
         const particle = {};
         resetParticle(particle, true);
         particles.push(particle);
@@ -111,12 +114,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function drawHummingbird(x, y, size, angle, alpha, wingPhase, colorIndex) {
+  function drawHummingbird(x, y, size, angle, alpha, wingPhase, colorIndex, facing) {
     const lift = Math.sin(wingPhase * 3.4) * size * .7;
     const color = colors[colorIndex % colors.length];
     context.save();
     context.translate(x, y);
     context.rotate(angle);
+    context.scale(facing, 1);
     context.fillStyle = `rgba(${color.join(",")}, ${alpha})`;
     context.strokeStyle = `rgba(30, 66, 62, ${Math.min(1, alpha + .18)})`;
     context.lineWidth = Math.max(.8, size * .12);
@@ -169,8 +173,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     particles.forEach((particle, index) => {
-      particle.y += particle.speed * particle.direction;
-      particle.x += particle.drift + Math.sin(particle.y * .015 + particle.bob) * .18;
+      if (weatherMode === "mist") {
+        particle.x += particle.horizontalSpeed * particle.flightDirection;
+        particle.y += particle.verticalDrift + Math.sin(particle.x * .018 + particle.bob) * .24;
+      } else {
+        particle.y += particle.speed * particle.direction;
+        particle.x += particle.drift + Math.sin(particle.y * .015 + particle.bob) * .18;
+      }
       particle.angle += particle.spin;
 
       if (weatherMode === "rain") {
@@ -191,27 +200,29 @@ document.addEventListener("DOMContentLoaded", () => {
           particle.x,
           particle.y,
           birdSize,
-          particle.angle * .45,
+          particle.verticalDrift * .28 + Math.sin(wingPhase * .32) * .035,
           particle.alpha + .18,
           wingPhase,
-          index
+          index,
+          particle.flightDirection
         );
-        if (index % 12 === 0) {
+        if (index % 15 === 0) {
           const spacing = birdSize * 2.6;
           [
-            [-spacing, spacing * .7],
-            [-spacing * 2, spacing * 1.4],
-            [spacing, spacing * .7],
-            [spacing * 2, spacing * 1.4]
+            [-particle.flightDirection * spacing, -spacing * .7],
+            [-particle.flightDirection * spacing, spacing * .7],
+            [-particle.flightDirection * spacing * 2, -spacing * 1.4],
+            [-particle.flightDirection * spacing * 2, spacing * 1.4]
           ].forEach(([offsetX, offsetY], flockIndex) => {
             drawHummingbird(
               particle.x + offsetX,
               particle.y + offsetY,
               birdSize * (.78 + flockIndex * .035),
-              particle.angle * .35,
+              particle.verticalDrift * .24 + Math.sin(wingPhase * .32) * .028,
               particle.alpha + .12,
               wingPhase + flockIndex * .7,
-              index + flockIndex + 1
+              index + flockIndex + 1,
+              particle.flightDirection
             );
           });
         }
