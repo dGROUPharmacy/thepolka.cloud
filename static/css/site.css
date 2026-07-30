@@ -31,8 +31,8 @@ body {
   height: 100%;
   pointer-events: none;
   z-index: 3;
-  opacity: .48;
-  mix-blend-mode: multiply;
+  opacity: .78;
+  mix-blend-mode: normal;
 }
 
 .app-container {
