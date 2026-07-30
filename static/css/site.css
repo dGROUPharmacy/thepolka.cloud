@@ -243,7 +243,6 @@ body {
 }
 
 @media (max-width: 760px) {
-  .polka-train-vertical { display: none; }
   .polka-train-horizontal { left: 0; }
 }
 
