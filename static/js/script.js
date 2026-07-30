@@ -49,10 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetParticle(particle, initial) {
     particle.x = Math.random() * width;
     particle.y = initial ? Math.random() * height : -24;
-    particle.speed = .45 + Math.random() * 1.65;
+    particle.speed = 1.1 + Math.random() * 2.1;
     particle.size = .8 + Math.random() * 2.2;
     particle.drift = (Math.random() - .5) * .5;
-    particle.alpha = .1 + Math.random() * .18;
+    particle.alpha = .2 + Math.random() * .2;
   }
 
   function resize() {
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const y = cloud.y + Math.cos(time * .00006 + cloud.phase) * 46;
       const radius = cloud.radius * (1 + Math.sin(time * .00018 + cloud.phase) * .09);
       const glow = context.createRadialGradient(x, y, 0, x, y, radius);
-      glow.addColorStop(0, `rgba(${cloud.color.join(",")}, .14)`);
+      glow.addColorStop(0, `rgba(${cloud.color.join(",")}, .22)`);
       glow.addColorStop(1, `rgba(${cloud.color.join(",")}, 0)`);
       context.fillStyle = glow;
       context.beginPath();
@@ -121,11 +121,11 @@ document.addEventListener("DOMContentLoaded", () => {
         context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         context.fill();
       } else if (weatherMode === "mist") {
-        context.strokeStyle = `rgba(75, 145, 158, ${particle.alpha * .58})`;
-        context.lineWidth = 1;
+        context.strokeStyle = `rgba(53, 132, 148, ${particle.alpha * .82})`;
+        context.lineWidth = 1.5;
         context.beginPath();
         context.moveTo(particle.x, particle.y);
-        context.lineTo(particle.x + 46, particle.y);
+        context.lineTo(particle.x + 64, particle.y);
         context.stroke();
         if (index % 9 === 0) {
           context.strokeStyle = `rgba(55, 112, 158, ${particle.alpha * .75})`;
