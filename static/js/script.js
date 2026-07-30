@@ -18,6 +18,58 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  const spaceRim = document.createElement("div");
+  spaceRim.className = "polka-space-rim";
+  spaceRim.setAttribute("aria-hidden", "true");
+  document.body.prepend(spaceRim);
+
+  function createRail(orientation) {
+    const rail = document.createElement("div");
+    rail.className = `polka-train-rail polka-train-${orientation}`;
+    rail.setAttribute("aria-hidden", "true");
+    const consist = document.createElement("div");
+    consist.className = "polka-train-consist";
+    ["engine", "car", "car", "car", "car", "engine"].forEach((kind) => {
+      const part = document.createElement("span");
+      part.className = `polka-train-${kind}`;
+      consist.appendChild(part);
+    });
+    const steam = document.createElement("span");
+    steam.className = "polka-train-steam";
+    consist.appendChild(steam);
+    rail.appendChild(consist);
+    document.body.appendChild(rail);
+    return consist;
+  }
+
+  const verticalTrain = createRail("vertical");
+  const horizontalTrain = createRail("horizontal");
+
+  function moveTrains() {
+    const pageRange = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const pageProgress = Math.min(1, Math.max(0, window.scrollY / pageRange));
+    verticalTrain.style.transform = `translateY(${pageProgress * Math.max(0, window.innerHeight - 150)}px)`;
+
+    const horizontalRange = Math.max(1, document.documentElement.scrollWidth - window.innerWidth);
+    const horizontalProgress = Math.min(1, Math.max(0, window.scrollX / horizontalRange));
+    horizontalTrain.style.transform = `translateX(${horizontalProgress * Math.max(0, window.innerWidth - 240)}px)`;
+  }
+
+  moveTrains();
+  window.addEventListener("scroll", moveTrains, { passive: true });
+  window.addEventListener("resize", moveTrains, { passive: true });
+
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebar) {
+    sidebar.addEventListener("scroll", () => {
+      const range = Math.max(1, sidebar.scrollHeight - sidebar.clientHeight);
+      const progress = Math.min(1, sidebar.scrollTop / range);
+      verticalTrain.style.transform = `translateY(${progress * Math.max(0, window.innerHeight - 150)}px)`;
+    }, { passive: true });
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const canvas = document.createElement("canvas");
@@ -94,11 +146,13 @@ document.addEventListener("DOMContentLoaded", () => {
         { type: "rocket", active: false, speed: .42, scale: 28 },
         { type: "balloon", active: false, speed: .28, scale: 32 }
       ].forEach((vehicle, index) => {
+        const initialDirection = Math.random() < .5 ? -1 : 1;
         aerialVehicles.push({
           ...vehicle,
-          direction: index === 0 ? 1 : -1,
-          x: index === 0 ? -90 : width + 90,
+          direction: initialDirection,
+          x: initialDirection > 0 ? -90 : width + 90,
           y: height * (.12 + index * .12),
+          slope: (Math.random() - .5) * .2,
           nextAppearance: performance.now() + 9000 + Math.random() * 18000
         });
       });
@@ -174,6 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function drawJet(vehicle) {
     context.save();
     context.translate(vehicle.x, vehicle.y);
+    context.rotate(vehicle.slope * .38);
     context.scale(vehicle.direction, 1);
     context.fillStyle = "rgba(58, 78, 92, .58)";
     context.strokeStyle = "rgba(255, 255, 255, .3)";
@@ -264,6 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (time >= vehicle.nextAppearance && activeCount < 2) {
           vehicle.active = true;
           vehicle.direction = Math.random() < .5 ? -1 : 1;
+          vehicle.slope = (Math.random() - .5) * .26;
           if (vehicle.type === "balloon") {
             vehicle.x = width * (.18 + Math.random() * .64);
             vehicle.y = height + 90;
@@ -286,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
         vehicle.y -= vehicle.speed * .72;
         drawRocket(vehicle);
       } else if (vehicle.type === "jet") {
-        vehicle.y += Math.sin(time * .00045) * .06;
+        vehicle.y += vehicle.slope + Math.sin(time * .00045) * .06;
         drawJet(vehicle);
       }
 
