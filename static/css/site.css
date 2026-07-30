@@ -218,6 +218,35 @@ body {
   100% { opacity: 0; transform: translate(-8px, -12px) scale(1.9); }
 }
 
+/* A locomotive leads from either direction; the far engine faces outward. */
+.polka-train-engine-end { transform: rotate(180deg); }
+
+.polka-train-smokestack {
+  position: absolute;
+  z-index: 4;
+  left: 5px;
+  top: 4px;
+  width: 9px;
+  height: 12px;
+  border: 2px solid #17191b;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(90deg, #17191b, #555b5d 48%, #17191b);
+  box-shadow: 0 -3px 0 1px #17191b;
+}
+.polka-train-vertical .polka-train-smokestack {
+  left: 4px;
+  top: 5px;
+  width: 12px;
+  height: 9px;
+  box-shadow: -3px 0 0 1px #17191b;
+}
+.polka-train-engine .polka-train-steam {
+  z-index: 6;
+  width: 10px;
+  height: 10px;
+  box-shadow: 5px -5px 0 -2px rgba(255,255,255,.72);
+}
+
 /* The custom locomotive rail replaces native gray scrollbars; never draw both. */
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { width: 0; height: 0; display: none; }
