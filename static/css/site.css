@@ -247,6 +247,32 @@ body {
   box-shadow: 5px -5px 0 -2px rgba(255,255,255,.72);
 }
 
+/* Counter the 180-degree end-engine rotation so every wheel stays track-side. */
+.polka-train-horizontal .polka-train-engine-end .polka-train-wheel {
+  top: -5px;
+  bottom: auto;
+}
+.polka-train-horizontal .polka-train-engine-end .polka-train-wheel-a {
+  right: 6px;
+  left: auto;
+}
+.polka-train-horizontal .polka-train-engine-end .polka-train-wheel-b {
+  left: 6px;
+  right: auto;
+}
+.polka-train-vertical .polka-train-engine-end .polka-train-wheel {
+  left: -5px;
+  right: auto;
+}
+.polka-train-vertical .polka-train-engine-end .polka-train-wheel-a {
+  bottom: 6px;
+  top: auto;
+}
+.polka-train-vertical .polka-train-engine-end .polka-train-wheel-b {
+  top: 6px;
+  bottom: auto;
+}
+
 /* The custom locomotive rail replaces native gray scrollbars; never draw both. */
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { width: 0; height: 0; display: none; }
