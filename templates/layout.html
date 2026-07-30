@@ -13,6 +13,138 @@
   <meta property="og:image" content="https://thepolka.cloud{{ url_for('static', filename='img/thepolka.cloud.png') }}">
   <title>{% block title %}ThePolka.Cloud{% endblock %}</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/thepolka.cloud.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=horizon1?v=glass2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/menu-green.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/footer-socials.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sky-art.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="sky-art" aria-hidden="true">
+    <span class="sky-jet sky-jet-one"><i></i></span>
+    <span class="sky-jet sky-jet-two"><i></i></span>
+    <span class="sky-jet sky-jet-three"><i></i></span>
+    <span class="sky-jet sky-jet-four"><i></i></span>
+    <span class="sky-bird sky-bird-one"></span>
+    <span class="sky-bird sky-bird-two"></span>
+    <span class="sky-bird sky-bird-three"></span>
+    <span class="sky-balloon"><i></i></span>
+  </div>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <a href="https://thepolka.cloud/#welcome">ThePolka.Cloud™</a>
+      </div>
+
+      <div class="hero-ticker" aria-label="Welcome in several languages">
+        <div class="ticker-track">
+          <span class="ticker-item" lang="en">Hello</span>
+          <span class="ticker-item" lang="es">Hola</span>
+          <span class="ticker-item" lang="ar" dir="rtl">مرحباً</span>
+          <span class="ticker-item" lang="zh">你好</span>
+          <span class="ticker-item" lang="fr">Bonjour</span>
+          <span class="ticker-item" lang="en" aria-hidden="true">Hello</span>
+          <span class="ticker-item" lang="es" aria-hidden="true">Hola</span>
+          <span class="ticker-item" lang="ar" dir="rtl" aria-hidden="true">مرحباً</span>
+          <span class="ticker-item" lang="zh" aria-hidden="true">你好</span>
+          <span class="ticker-item" lang="fr" aria-hidden="true">Bonjour</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Global navigation">
+        <div class="nav-section"><span class="nav-section-label">Use</span>
+          <a href="https://thepolka.cloud/#welcome" class="nav-link{% if active == 'home' %} active{% endif %}"{% if active == 'home' %} aria-current="page"{% endif %}>Home</a>
+          <a href="/static/library.html" class="nav-link">App Library</a>
+          <a href="{{ url_for('research_page') }}" class="nav-link{% if active == 'research' %} active{% endif %}">Research</a>
+          <a href="{{ url_for('forecast_page') }}" class="nav-link{% if active == 'forecast' %} active{% endif %}">Forecast</a>
+          <a href="{{ url_for('tools_page') }}" class="nav-link{% if active == 'tools' %} active{% endif %}">Business Tools</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Build</span>
+          <a href="{{ url_for('ecosystem_page', page='resume') }}" class="nav-link{% if active == 'resume' %} active{% endif %}">Résumé Generator</a>
+          <a href="{{ url_for('java_page') }}" class="nav-link{% if active == 'java' %} active{% endif %}">Java → Apex</a>
+          <a href="{{ url_for('ecosystem_page', page='cad') }}" class="nav-link{% if active == 'cad' %} active{% endif %}">CAD Experience</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Work & learn</span>
+          <a href="{{ url_for('profile_page') }}" class="nav-link{% if active == 'profile' %} active{% endif %}">Profile Key</a>
+          <a href="{{ url_for('apply_page') }}" class="nav-link{% if active == 'apply' %} active{% endif %}">Apply</a>
+          <a href="{{ url_for('ilaw_page') }}" class="nav-link{% if active == 'ilaw' %} active{% endif %}">iLAW</a>
+          <a href="{{ url_for('mylm_page') }}" class="nav-link{% if active == 'mylm' %} active{% endif %}">MyLM</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Systems</span>
+          <a href="{{ url_for('ecosystem_page', page='faire') }}" class="nav-link{% if active == 'faire' %} active{% endif %}">FAIRE OS</a>
+          <a href="{{ url_for('smart_ai_page') }}" class="nav-link{% if active == 'smart-ai' %} active{% endif %}">Smart AI</a>
+          <a href="{{ url_for('agent_page') }}" class="nav-link{% if active == 'agent' %} active{% endif %}">Agent Evidence</a>
+          <a href="{{ url_for('agentforce_page') }}" class="nav-link{% if active == 'agentforce' %} active{% endif %}">Agentforce</a>
+        </div>
+        <div class="nav-section"><span class="nav-section-label">Explore</span>
+          <a href="{{ url_for('ecosystem_page', page='mail') }}" class="nav-link{% if active == 'mail' %} active{% endif %}">Mail</a>
+          <a href="{{ url_for('ecosystem_page', page='directory') }}" class="nav-link{% if active == 'directory' %} active{% endif %}">Navigate</a>
+          <a href="{{ url_for('ai_marketplace') }}" class="nav-link{% if active == 'marketplace' %} active{% endif %}">AI Reviews</a>
+          <a href="{{ url_for('ai_warehouse') }}" class="nav-link{% if active == 'warehouse' %} active{% endif %}">AI Warehouse</a>
+          <a href="https://store.thepolka.cloud/#support" class="nav-link">Boutique</a>
+        </div>
+      </nav>
+
+      <img src="{{ url_for('static', filename='img/thepolka.cloud.png') }}" alt="ThePolka.Cloud" loading="lazy">
+    </aside>
+
+    <div class="main-column">
+      <main class="page-content">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="site-footer">
+        <div class="footer-contact">
+          <a href="mailto:info@thepolka.cloud">info@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="mailto:support@thepolka.cloud">support@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="mailto:sales@thepolka.cloud">sales@thepolka.cloud</a>
+          <span class="sep" aria-hidden="true">|</span>
+          <a href="{{ url_for('privacy_page') }}">Privacy</a>
+        </div>
+        <nav class="footer-socials" aria-label="Automated socials">
+          <strong>Automated socials</strong>
+          <a class="footer-social-icon" href="https://www.linkedin.com/company/thepolka.cloud" target="_blank" rel="me noopener noreferrer" aria-label="ThePolka.Cloud company page on LinkedIn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V8.98h3.42v1.57h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.29ZM5.32 7.41a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.1 20.45H3.54V8.98H7.1v11.47Z"/>
+            </svg>
+            <span class="sr-only">LinkedIn</span>
+          </a>
+          <a class="footer-social-icon" href="https://x.com/ibmtwc" target="_blank" rel="me noopener noreferrer" aria-label="@ibmtwc on Twitter">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M23.4 4.8c-.8.4-1.7.6-2.6.7.9-.6 1.7-1.5 2-2.5-.9.5-1.9.9-3 1.1A4.55 4.55 0 0 0 16.4 2a4.6 4.6 0 0 0-4.5 5.6A13.02 13.02 0 0 1 2.5 2.8a4.6 4.6 0 0 0 1.4 6.1c-.7 0-1.4-.2-2.1-.6v.1c0 2.2 1.6 4.1 3.7 4.5-.4.1-.8.2-1.2.2-.3 0-.6 0-.9-.1a4.6 4.6 0 0 0 4.3 3.2A9.2 9.2 0 0 1 2 18.1c-.4 0-.7 0-1.1-.1A13 13 0 0 0 8 20.1c8.5 0 13.2-7.1 13.2-13.2v-.6c.9-.6 1.6-1.5 2.2-2.4v.9Z"/>
+            </svg>
+            <span class="sr-only">@ibmtwc on Twitter</span>
+          </a>
+        </nav>
+        <div class="footer-legal">
+          ThePolka.Cloud™ — Patent pending. Trademark applications filed and in process.
+          Copyright © 2019–2026. All rights reserved.
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}?v=horizon1?v=sky1"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{% block description %}ThePolka.Cloud software, calculators, weather, education, AI systems, and professional tools.{% endblock %}">
+  <link rel="canonical" href="https://thepolka.cloud{{ request.path }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ThePolka.Cloud">
+  <meta property="og:title" content="{% block og_title %}ThePolka.Cloud{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Useful tools, weather, software builds, and practical learning environments.{% endblock %}">
+  <meta property="og:url" content="https://thepolka.cloud{{ request.path }}">
+  <meta property="og:image" content="https://thepolka.cloud{{ url_for('static', filename='img/thepolka.cloud.png') }}">
+  <title>{% block title %}ThePolka.Cloud{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/thepolka.cloud.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=glass2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/menu-green.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/footer-socials.css') }}">
