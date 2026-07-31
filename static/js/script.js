@@ -165,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { type: "jet", active: false, speed: .66, scale: 32 },
         { type: "rocket", active: false, speed: .48, scale: 31 },
         { type: "balloon", active: false, speed: .34, scale: 35 },
+        { type: "flying-car", active: false, speed: .54, scale: 27 },
         { type: "parachute", active: false, speed: .34, scale: 24 },
         { type: "parachute", active: false, speed: .29, scale: 21 }
       ].forEach((vehicle, index) => {
@@ -343,6 +344,43 @@ document.addEventListener("DOMContentLoaded", () => {
     context.restore();
   }
 
+  function drawFlyingCar(vehicle, time) {
+    context.save();
+    context.translate(vehicle.x, vehicle.y + Math.sin(time * .0013) * 4);
+    context.rotate(vehicle.slope * .18);
+    context.scale(vehicle.direction, 1);
+    const s = vehicle.scale;
+    context.fillStyle = "rgba(69, 121, 158, .74)";
+    context.strokeStyle = "rgba(31, 47, 59, .68)";
+    context.lineWidth = 1.2;
+    context.beginPath();
+    context.roundRect(-s, -s * .18, s * 2, s * .55, s * .14);
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(167, 217, 231, .7)";
+    context.beginPath();
+    context.moveTo(-s * .45, -s * .18);
+    context.lineTo(-s * .22, -s * .58);
+    context.lineTo(s * .48, -s * .58);
+    context.lineTo(s * .72, -s * .18);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.fillStyle = "rgba(30, 38, 43, .85)";
+    [-.62, .62].forEach((offset) => {
+      context.beginPath();
+      context.arc(s * offset, s * .38, s * .2, 0, Math.PI * 2);
+      context.fill();
+      context.strokeStyle = "rgba(202, 228, 235, .75)";
+      context.beginPath();
+      context.arc(s * offset, s * .38, s * .08, 0, Math.PI * 2);
+      context.stroke();
+    });
+    context.fillStyle = "rgba(255, 226, 132, .75)";
+    context.fillRect(s * .9, -s * .02, s * .12, s * .13);
+    context.restore();
+  }
+
   function drawParachute(vehicle, time) {
     context.save();
     context.translate(vehicle.x, vehicle.y);
@@ -424,12 +462,17 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (vehicle.type === "jet") {
         vehicle.y += vehicle.slope + Math.sin(time * .00045) * .06;
         drawJet(vehicle);
+      } else if (vehicle.type === "flying-car") {
+        vehicle.y += vehicle.slope * .3 + Math.sin(time * .0007) * .08;
+        drawFlyingCar(vehicle, time);
       }
 
       const finished = vehicle.x < -130 || vehicle.x > width + 130 || vehicle.y < -110 || vehicle.y > height + 110;
       if (finished) {
         vehicle.active = false;
-        vehicle.nextAppearance = time + (vehicle.type === "parachute" ? 16000 : 9000) + Math.random() * (vehicle.type === "parachute" ? 22000 : 15000);
+        const rareDelay = vehicle.type === "flying-car" ? 32000 : vehicle.type === "parachute" ? 16000 : 9000;
+        const randomDelay = vehicle.type === "flying-car" ? 36000 : vehicle.type === "parachute" ? 22000 : 15000;
+        vehicle.nextAppearance = time + rareDelay + Math.random() * randomDelay;
       }
     });
   }
