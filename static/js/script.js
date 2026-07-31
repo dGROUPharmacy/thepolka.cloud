@@ -161,9 +161,12 @@ document.addEventListener("DOMContentLoaded", () => {
         particles.push(particle);
       }
       [
-        { type: "jet", active: true, speed: .72, scale: 34 },
-        { type: "rocket", active: false, speed: .42, scale: 28 },
-        { type: "balloon", active: false, speed: .28, scale: 32 }
+        { type: "jet", active: true, speed: .78, scale: 38 },
+        { type: "jet", active: false, speed: .66, scale: 32 },
+        { type: "rocket", active: false, speed: .48, scale: 31 },
+        { type: "balloon", active: false, speed: .34, scale: 35 },
+        { type: "parachute", active: false, speed: .34, scale: 24 },
+        { type: "parachute", active: false, speed: .29, scale: 21 }
       ].forEach((vehicle, index) => {
         const initialDirection = Math.random() < .5 ? -1 : 1;
         aerialVehicles.push({
@@ -172,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
           x: initialDirection > 0 ? -90 : width + 90,
           y: height * (.12 + index * .12),
           slope: (Math.random() - .5) * .2,
-          nextAppearance: performance.now() + 9000 + Math.random() * 18000
+          nextAppearance: performance.now() + 4000 + Math.random() * 12000
         });
       });
     }
@@ -340,32 +343,81 @@ document.addEventListener("DOMContentLoaded", () => {
     context.restore();
   }
 
+  function drawParachute(vehicle, time) {
+    context.save();
+    context.translate(vehicle.x, vehicle.y);
+    const sway = Math.sin(time * .0014 + vehicle.scale) * vehicle.scale * .08;
+    context.translate(sway, 0);
+    context.strokeStyle = "rgba(48, 59, 64, .68)";
+    context.fillStyle = "rgba(242, 139, 74, .64)";
+    context.lineWidth = 1.2;
+    context.beginPath();
+    context.arc(0, 0, vehicle.scale * .72, Math.PI, Math.PI * 2);
+    context.quadraticCurveTo(0, vehicle.scale * .34, -vehicle.scale * .72, 0);
+    context.closePath();
+    context.fill();
+    context.stroke();
+    context.beginPath();
+    context.moveTo(-vehicle.scale * .68, 0);
+    context.lineTo(-vehicle.scale * .12, vehicle.scale * .92);
+    context.moveTo(vehicle.scale * .68, 0);
+    context.lineTo(vehicle.scale * .12, vehicle.scale * .92);
+    context.stroke();
+    context.fillStyle = "rgba(45, 57, 65, .78)";
+    context.beginPath();
+    context.arc(0, vehicle.scale * 1.02, vehicle.scale * .13, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(0, vehicle.scale * 1.15);
+    context.lineTo(0, vehicle.scale * 1.58);
+    context.moveTo(0, vehicle.scale * 1.3);
+    context.lineTo(-vehicle.scale * .28, vehicle.scale * 1.48);
+    context.moveTo(0, vehicle.scale * 1.3);
+    context.lineTo(vehicle.scale * .28, vehicle.scale * 1.48);
+    context.moveTo(0, vehicle.scale * 1.58);
+    context.lineTo(-vehicle.scale * .22, vehicle.scale * 1.9);
+    context.moveTo(0, vehicle.scale * 1.58);
+    context.lineTo(vehicle.scale * .22, vehicle.scale * 1.9);
+    context.stroke();
+    context.restore();
+  }
+
   function drawAerialVehicles(time) {
     aerialVehicles.forEach((vehicle) => {
       if (!vehicle.active) {
         const activeCount = aerialVehicles.filter((item) => item.active).length;
-        if (time >= vehicle.nextAppearance && activeCount < 2) {
+        const parachutesActive = aerialVehicles.filter((item) => item.active && item.type === "parachute").length;
+        const mayAppear = vehicle.type !== "parachute" || parachutesActive < 2;
+        if (time >= vehicle.nextAppearance && activeCount < 3 && mayAppear) {
           vehicle.active = true;
           vehicle.direction = Math.random() < .5 ? -1 : 1;
           vehicle.slope = (Math.random() - .5) * .26;
           if (vehicle.type === "balloon") {
-            vehicle.x = width * (.18 + Math.random() * .64);
+            vehicle.x = width * (.14 + Math.random() * .72);
             vehicle.y = height + 90;
+          } else if (vehicle.type === "parachute") {
+            vehicle.x = width * (.16 + Math.random() * .68);
+            vehicle.y = height * (.08 + Math.random() * .18);
           } else {
-            vehicle.x = vehicle.direction > 0 ? -90 : width + 90;
-            vehicle.y = height * (.08 + Math.random() * .23);
+            vehicle.x = vehicle.direction > 0 ? -100 : width + 100;
+            vehicle.y = height * (.07 + Math.random() * .29);
           }
         }
         return;
       }
 
       if (vehicle.type === "balloon") {
-        vehicle.x += Math.sin(time * .00034) * .12;
+        vehicle.x += Math.sin(time * .00034) * .16;
         vehicle.y -= vehicle.speed;
         drawBalloon(vehicle);
+      } else if (vehicle.type === "parachute") {
+        vehicle.x += Math.sin(time * .0012 + vehicle.scale) * .18;
+        vehicle.y += vehicle.speed;
+        drawParachute(vehicle, time);
       } else {
         vehicle.x += vehicle.speed * vehicle.direction;
       }
+
       if (vehicle.type === "rocket") {
         vehicle.y -= vehicle.speed * .72;
         drawRocket(vehicle);
@@ -374,9 +426,10 @@ document.addEventListener("DOMContentLoaded", () => {
         drawJet(vehicle);
       }
 
-      if (vehicle.x < -120 || vehicle.x > width + 120 || vehicle.y < -100) {
+      const finished = vehicle.x < -130 || vehicle.x > width + 130 || vehicle.y < -110 || vehicle.y > height + 110;
+      if (finished) {
         vehicle.active = false;
-        vehicle.nextAppearance = time + 14000 + Math.random() * 26000;
+        vehicle.nextAppearance = time + (vehicle.type === "parachute" ? 16000 : 9000) + Math.random() * (vehicle.type === "parachute" ? 22000 : 15000);
       }
     });
   }
