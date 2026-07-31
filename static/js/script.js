@@ -202,44 +202,53 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function drawHummingbird(x, y, size, angle, alpha, wingPhase, colorIndex, facing) {
-    const lift = Math.sin(wingPhase * 3.4) * size * .7;
+    const flap = Math.sin(wingPhase * 4.6);
+    const wingRise = flap * size * .95;
+    const wingBend = (0.42 + Math.abs(flap) * .5) * size;
     const color = colors[colorIndex % colors.length];
     context.save();
-    context.translate(x, y);
-    context.rotate(angle);
+    context.translate(x, y + Math.cos(wingPhase * 4.6) * size * .12);
+    context.rotate(angle * .45);
     context.scale(facing, 1);
-    context.fillStyle = `rgba(${color.join(",")}, ${alpha})`;
-    context.strokeStyle = `rgba(30, 66, 62, ${Math.min(1, alpha + .18)})`;
-    context.lineWidth = Math.max(.8, size * .12);
+    context.strokeStyle = `rgba(34, 65, 61, ${Math.min(1, alpha + .34)})`;
+    context.fillStyle = `rgba(${color.join(",")}, ${Math.min(.82, alpha + .22)})`;
+    context.lineWidth = Math.max(1.15, size * .16);
     context.lineCap = "round";
+    context.lineJoin = "round";
+
+    /* Two broad, jointed wings create the familiar flying-bird silhouette. */
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.quadraticCurveTo(-size * .48, -wingBend, -size * 1.42, wingRise);
+    context.moveTo(0, 0);
+    context.quadraticCurveTo(size * .48, -wingBend, size * 1.42, wingRise);
+    context.stroke();
+
+    /* Feathered lower edges make each wing read as a wing, not a jet streak. */
+    context.globalAlpha = .72;
+    context.beginPath();
+    context.moveTo(-size * 1.34, wingRise);
+    context.quadraticCurveTo(-size * .7, -wingBend * .48, 0, size * .12);
+    context.quadraticCurveTo(size * .7, -wingBend * .48, size * 1.34, wingRise);
+    context.stroke();
+    context.globalAlpha = 1;
 
     context.beginPath();
-    context.ellipse(0, 0, size * .58, size * .28, -.12, 0, Math.PI * 2);
+    context.ellipse(0, size * .1, size * .23, size * .5, 0, 0, Math.PI * 2);
     context.fill();
 
     context.beginPath();
-    context.moveTo(size * .48, -size * .04);
-    context.lineTo(size * 1.55, -size * .18);
-    context.stroke();
-
-    context.beginPath();
-    context.moveTo(-size * .18, 0);
-    context.quadraticCurveTo(-size * .55, -size * 1.05, -size * .08, -size * .3 + lift);
-    context.moveTo(-size * .1, size * .04);
-    context.quadraticCurveTo(-size * .7, size * .8, -size * .18, size * .25 - lift * .35);
-    context.stroke();
-
-    context.beginPath();
-    context.moveTo(-size * .5, 0);
-    context.lineTo(-size * 1.05, -size * .28);
-    context.lineTo(-size * .84, size * .18);
+    context.moveTo(0, -size * .35);
+    context.lineTo(size * .18, -size * .62);
+    context.lineTo(0, -size * .52);
     context.closePath();
     context.fill();
 
     context.beginPath();
-    context.arc(size * .3, -size * .09, Math.max(.7, size * .055), 0, Math.PI * 2);
-    context.fillStyle = `rgba(20, 30, 28, ${Math.min(1, alpha + .3)})`;
-    context.fill();
+    context.moveTo(-size * .18, size * .48);
+    context.lineTo(-size * .42, size * .78);
+    context.moveTo(size * .18, size * .48);
+    context.lineTo(size * .42, size * .78);
     context.stroke();
     context.restore();
   }
