@@ -474,6 +474,36 @@ def linkedin_publish_text(content):
         return response.headers.get("x-restli-id", "published")
 
 
+def ensure_scheduled_social_draft(interval_seconds=86400):
+    """Queue no more than one Echo-generated LinkedIn draft per interval."""
+    now = datetime.now(timezone.utc)
+    with agent_evidence_connection() as connection:
+        latest = connection.execute(
+            "SELECT created_at FROM social_approval_queue ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        if latest:
+            try:
+                created_at = datetime.fromisoformat(latest["created_at"])
+            except ValueError:
+                created_at = now - timedelta(seconds=interval_seconds + 1)
+            if (now - created_at).total_seconds() < interval_seconds:
+                return False
+        templates = (
+            "Automation should be observable. ThePolka.Cloud Agentforce runs scheduled production checks with visible evidence, while external actions remain behind human approval. Echo prepares the work; a person makes the publishing decision.\n\n#AI #Automation #HumanInTheLoop",
+            "A useful AI agent does more than answer prompts: it works on a schedule, records evidence, and stops at consequential decisions. That is the operating model behind ThePolka.Cloud Agentforce.\n\n#ResponsibleAI #Agents #Automation",
+            "Seven specialized agents, one accountable workflow. ThePolka.Cloud now tracks scheduled runs, connection state, success metrics, and human approvals in production. Progress is better when it is inspectable.\n\n#AIAgents #Operations #HumanInTheLoop",
+        )
+        content = templates[now.date().toordinal() % len(templates)]
+        timestamp = now.isoformat()
+        connection.execute(
+            "INSERT INTO social_approval_queue (platform, content, status, created_at, updated_at) VALUES ('linkedin', ?, 'pending', ?, ?)",
+            (content, timestamp, timestamp),
+        )
+        connection.commit()
+    record_agent_event("social", "scheduled_draft", "pass", "Echo generated a LinkedIn draft for human review; no post was sent.")
+    return True
+
+
 def perform_agent_automation(slug):
     """Run one bounded, read-only production task and return inspectable evidence."""
     if slug == "base":
@@ -498,6 +528,12 @@ def perform_agent_automation(slug):
         except Exception as exc:
             app.logger.warning("LinkedIn verification failed: %s", type(exc).__name__)
             return "attention", "LinkedIn is connected but its OAuth token could not be verified; no post sent."
+        if connected:
+            drafted = ensure_scheduled_social_draft()
+            if drafted:
+                detail += " A new draft was added to the approval queue."
+            else:
+                detail += " The 24-hour draft limit is satisfied."
         return ("pass" if connected else "attention"), detail
     if slug == "housekeeping":
         db_files = list(DATA_DIR.glob("*.db"))

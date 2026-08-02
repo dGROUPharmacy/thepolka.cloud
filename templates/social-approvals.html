@@ -6,6 +6,7 @@
   <p class="eyebrow">Echo · Human-in-the-loop controls</p>
   <h1>LinkedIn approval queue</h1>
   <p class="lead">Drafting, approval, and publishing are separate recorded steps. Echo cannot publish a pending draft.</p>
+  <p class="small-note"><strong>Live queue:</strong> refreshes every 30 seconds when the draft editor is empty. Echo may add at most one scheduled draft every 24 hours.</p>
 
   <section class="agent-operations">
     <h2>Create a draft</h2>
@@ -49,4 +50,14 @@
   {% endfor %}
   </div>
 </section>
+<script>
+(() => {
+  const editor = document.getElementById('content');
+  const refreshWhenIdle = () => {
+    if (!editor || !editor.value.trim()) window.location.reload();
+    else window.setTimeout(refreshWhenIdle, 30000);
+  };
+  window.setTimeout(refreshWhenIdle, 30000);
+})();
+</script>
 {% endblock %}
