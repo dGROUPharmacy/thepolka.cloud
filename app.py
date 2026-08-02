@@ -423,6 +423,20 @@ def agent_statuses():
                 "SELECT last_run_at, last_status, last_detail FROM agent_automation_state WHERE agent_slug = ?",
                 (slug,),
             ).fetchone()
+            run_metrics = connection.execute(
+                """SELECT
+                     COUNT(*) AS total_runs,
+                     SUM(CASE WHEN status = 'pass' THEN 1 ELSE 0 END) AS passed_runs,
+                     SUM(CASE WHEN status = 'fail' THEN 1 ELSE 0 END) AS failed_runs,
+                     SUM(CASE WHEN status = 'attention' THEN 1 ELSE 0 END) AS attention_runs
+                   FROM agent_events
+                   WHERE agent_slug = ? AND event_type = 'scheduled_run'""",
+                (slug,),
+            ).fetchone()
+            metrics = dict(run_metrics)
+            total_runs = metrics["total_runs"] or 0
+            passed_runs = metrics["passed_runs"] or 0
+            metrics["success_rate"] = round((passed_runs / total_runs) * 100, 1) if total_runs else 0.0
             statuses[slug] = {
                 **product,
                 "active": True,
@@ -436,6 +450,7 @@ def agent_statuses():
                     "last_detail": "Awaiting first Render health tick.",
                 },
                 "automation_interval_seconds": 900,
+                "metrics": metrics,
                 "events": [dict(row) for row in events],
             }
     return statuses

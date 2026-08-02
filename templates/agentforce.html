@@ -18,6 +18,7 @@
       <p><span class="status-pill status-pass">Active</span> <span class="status-pill status-pass">Download ready</span> <span class="status-pill status-{{ 'pass' if product.connected else 'attention' }}">{{ product.connection_label }}</span></p>
       <p class="small-note"><strong>Automation:</strong> every {{ product.automation_interval_seconds // 60 }} minutes · <span class="status-pill status-{{ 'pass' if product.automation.last_status == 'pass' else 'attention' }}">{{ product.automation.last_status }}</span></p>
       <p class="small-note">{{ product.automation.last_detail }}{% if product.automation.last_run_at %}<br><time datetime="{{ product.automation.last_run_at }}">Last run: {{ product.automation.last_run_at }}</time>{% endif %}</p>
+      <p class="small-note"><strong>Proof metrics:</strong> {{ product.metrics.total_runs }} runs · {{ product.metrics.passed_runs }} passed · {{ product.metrics.failed_runs }} failed · {{ product.metrics.success_rate }}% success</p>
       <ul>{% for skill in product.skills %}<li>{{ skill }}</li>{% endfor %}</ul>
       <p class="small-note"><strong>Adapters:</strong> {{ product.adapters|join(', ') }}. Compatibility depends on the destination system’s API and permissions.</p>
       <div class="agent-actions">
