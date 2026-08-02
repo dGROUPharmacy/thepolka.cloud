@@ -368,18 +368,27 @@ def linkedin_verify():
     if not access_token:
         return False, "LinkedIn is ready to connect; no OAuth grant is stored."
     api_request = Request(
-        "https://api.linkedin.com/v2/userinfo",
-        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+        "https://api.linkedin.com/rest/identityMe",
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Accept": "application/json",
+            "LinkedIn-Version": "202510.03",
+            "X-Restli-Protocol-Version": "2.0.0",
+        },
     )
     with urlopen(api_request, timeout=15) as response:
         profile = json.loads(response.read().decode("utf-8"))
     verified_at = datetime.now(timezone.utc).isoformat()
-    display_name = profile.get("name") or (row["display_name"] if row else None) or "LinkedIn member"
+    basic_info = profile.get("basicInfo") or {}
+    first_name = next(iter((basic_info.get("firstName") or {}).get("localized", {}).values()), "")
+    last_name = next(iter((basic_info.get("lastName") or {}).get("localized", {}).values()), "")
+    display_name = " ".join(part for part in (first_name, last_name) if part).strip()
+    display_name = display_name or profile.get("name") or (row["display_name"] if row else None) or "LinkedIn member"
     with agent_evidence_connection() as connection:
         if row:
             connection.execute(
                 "UPDATE agent_integrations SET external_id=?, display_name=?, last_verified_at=? WHERE provider='linkedin'",
-                (profile.get("sub"), display_name, verified_at),
+                (profile.get("id") or profile.get("sub"), display_name, verified_at),
             )
         connection.commit()
     return True, f"LinkedIn OAuth verified for {display_name}; publishing remains human-approved."
