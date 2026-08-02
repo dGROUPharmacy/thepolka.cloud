@@ -345,7 +345,18 @@ def linkedin_integration():
         row = connection.execute(
             "SELECT external_id, display_name, scopes, expires_at, connected_at, last_verified_at FROM agent_integrations WHERE provider='linkedin'"
         ).fetchone()
-    return dict(row) if row else None
+    if row:
+        return dict(row)
+    if os.environ.get("LINKEDIN_ACCESS_TOKEN", "").strip():
+        return {
+            "external_id": None,
+            "display_name": "LinkedIn member",
+            "scopes": "openid profile w_member_social",
+            "expires_at": None,
+            "connected_at": None,
+            "last_verified_at": None,
+        }
+    return None
 
 
 def linkedin_verify():
@@ -353,21 +364,23 @@ def linkedin_verify():
         row = connection.execute(
             "SELECT access_token, display_name FROM agent_integrations WHERE provider='linkedin'"
         ).fetchone()
-    if not row:
+    access_token = row["access_token"] if row else os.environ.get("LINKEDIN_ACCESS_TOKEN", "").strip()
+    if not access_token:
         return False, "LinkedIn is ready to connect; no OAuth grant is stored."
     api_request = Request(
         "https://api.linkedin.com/v2/userinfo",
-        headers={"Authorization": f"Bearer {row['access_token']}", "Accept": "application/json"},
+        headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
     )
     with urlopen(api_request, timeout=15) as response:
         profile = json.loads(response.read().decode("utf-8"))
     verified_at = datetime.now(timezone.utc).isoformat()
-    display_name = profile.get("name") or row["display_name"] or "LinkedIn member"
+    display_name = profile.get("name") or (row["display_name"] if row else None) or "LinkedIn member"
     with agent_evidence_connection() as connection:
-        connection.execute(
-            "UPDATE agent_integrations SET external_id=?, display_name=?, last_verified_at=? WHERE provider='linkedin'",
-            (profile.get("sub"), display_name, verified_at),
-        )
+        if row:
+            connection.execute(
+                "UPDATE agent_integrations SET external_id=?, display_name=?, last_verified_at=? WHERE provider='linkedin'",
+                (profile.get("sub"), display_name, verified_at),
+            )
         connection.commit()
     return True, f"LinkedIn OAuth verified for {display_name}; publishing remains human-approved."
 
