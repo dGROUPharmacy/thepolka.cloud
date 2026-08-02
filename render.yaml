@@ -18,6 +18,12 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: ADMIN_TOKEN
+        generateValue: true
       - key: FAIRE_YOUTUBE_VIDEO_ID
         sync: false
       - key: STRIPE_PRICE_ILAW_CERTIFICATE

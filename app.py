@@ -301,6 +301,25 @@ def agent_evidence_connection():
             last_detail TEXT NOT NULL
         )"""
     )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS agent_integrations (
+            provider TEXT PRIMARY KEY,
+            access_token TEXT NOT NULL,
+            external_id TEXT,
+            display_name TEXT,
+            scopes TEXT NOT NULL DEFAULT '',
+            expires_at TEXT,
+            connected_at TEXT NOT NULL,
+            last_verified_at TEXT
+        )"""
+    )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS oauth_states (
+            provider TEXT NOT NULL,
+            state TEXT PRIMARY KEY,
+            expires_at TEXT NOT NULL
+        )"""
+    )
     connection.commit()
     return connection
 
@@ -319,6 +338,38 @@ def record_agent_event(slug, event_type, status, detail):
             (slug, slug),
         )
         connection.commit()
+
+
+def linkedin_integration():
+    with agent_evidence_connection() as connection:
+        row = connection.execute(
+            "SELECT external_id, display_name, scopes, expires_at, connected_at, last_verified_at FROM agent_integrations WHERE provider='linkedin'"
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def linkedin_verify():
+    with agent_evidence_connection() as connection:
+        row = connection.execute(
+            "SELECT access_token, display_name FROM agent_integrations WHERE provider='linkedin'"
+        ).fetchone()
+    if not row:
+        return False, "LinkedIn is ready to connect; no OAuth grant is stored."
+    api_request = Request(
+        "https://api.linkedin.com/v2/userinfo",
+        headers={"Authorization": f"Bearer {row['access_token']}", "Accept": "application/json"},
+    )
+    with urlopen(api_request, timeout=15) as response:
+        profile = json.loads(response.read().decode("utf-8"))
+    verified_at = datetime.now(timezone.utc).isoformat()
+    display_name = profile.get("name") or row["display_name"] or "LinkedIn member"
+    with agent_evidence_connection() as connection:
+        connection.execute(
+            "UPDATE agent_integrations SET external_id=?, display_name=?, last_verified_at=? WHERE provider='linkedin'",
+            (profile.get("sub"), display_name, verified_at),
+        )
+        connection.commit()
+    return True, f"LinkedIn OAuth verified for {display_name}; publishing remains human-approved."
 
 
 def perform_agent_automation(slug):
@@ -340,7 +391,12 @@ def perform_agent_automation(slug):
             leads = connection.execute("SELECT COUNT(*) FROM contributions").fetchone()[0]
         return "pass", f"Sales pipeline audit completed; {leads} owned inbound records available for qualification."
     if slug == "social":
-        return "pass", "Social readiness audit completed; LinkedIn and X catalogued; no post sent."
+        try:
+            connected, detail = linkedin_verify()
+        except Exception as exc:
+            app.logger.warning("LinkedIn verification failed: %s", type(exc).__name__)
+            return "attention", "LinkedIn is connected but its OAuth token could not be verified; no post sent."
+        return ("pass" if connected else "attention"), detail
     if slug == "housekeeping":
         db_files = list(DATA_DIR.glob("*.db"))
         return "pass", f"Housekeeping audit completed; {len(db_files)} database files healthy; no destructive cleanup performed."
@@ -414,6 +470,8 @@ def agent_statuses():
         connection.commit()
         for slug, product in AGENT_PRODUCTS.items():
             connected = bool(os.environ.get(f"AGENT_CONNECTIONS_{slug.upper()}", "").strip())
+            if slug == "social":
+                connected = linkedin_integration() is not None
             price_ready = bool(os.environ.get("STRIPE_SECRET_KEY", "").strip())
             events = connection.execute(
                 "SELECT event_type, status, detail, created_at FROM agent_events WHERE agent_slug = ? ORDER BY id DESC LIMIT 8",
@@ -874,6 +932,93 @@ def agent_page():
 @app.get("/agentforce")
 def agentforce_page():
     return render_template("agentforce.html", active="agentforce", products=agent_statuses())
+
+
+@app.post("/agentforce/linkedin/connect")
+def linkedin_connect():
+    if not admin_authorized():
+        return jsonify(error="Administrative authorization required."), 403
+    client_id = os.environ.get("LINKEDIN_CLIENT_ID", "").strip()
+    if not client_id or not os.environ.get("LINKEDIN_CLIENT_SECRET", "").strip():
+        return jsonify(error="LinkedIn client credentials are not configured."), 503
+    state = secrets.token_urlsafe(32)
+    expires_at = datetime.fromtimestamp(time.time() + 600, timezone.utc).isoformat()
+    with agent_evidence_connection() as connection:
+        connection.execute("DELETE FROM oauth_states WHERE provider='linkedin'")
+        connection.execute(
+            "INSERT INTO oauth_states (provider, state, expires_at) VALUES ('linkedin', ?, ?)",
+            (state, expires_at),
+        )
+        connection.commit()
+    callback = url_for("linkedin_callback", _external=True)
+    authorization_url = "https://www.linkedin.com/oauth/v2/authorization?" + urlencode({
+        "response_type": "code",
+        "client_id": client_id,
+        "redirect_uri": callback,
+        "state": state,
+        "scope": "openid profile w_member_social",
+    })
+    return jsonify(authorization_url=authorization_url, redirect_uri=callback, expires_in=600)
+
+
+@app.get("/agentforce/linkedin/callback")
+def linkedin_callback():
+    state = request.args.get("state", "")
+    code = request.args.get("code", "")
+    if not state or not code:
+        record_agent_event("social", "linkedin_oauth", "attention", "LinkedIn authorization was cancelled or incomplete.")
+        return redirect(url_for("agentforce_page") + "#social")
+    with agent_evidence_connection() as connection:
+        saved = connection.execute(
+            "SELECT expires_at FROM oauth_states WHERE provider='linkedin' AND state=?", (state,)
+        ).fetchone()
+        connection.execute("DELETE FROM oauth_states WHERE provider='linkedin'")
+        connection.commit()
+    if not saved or datetime.fromisoformat(saved["expires_at"]) <= datetime.now(timezone.utc):
+        return jsonify(error="LinkedIn authorization state is invalid or expired."), 400
+    callback = url_for("linkedin_callback", _external=True)
+    token_body = urlencode({
+        "grant_type": "authorization_code",
+        "code": code,
+        "redirect_uri": callback,
+        "client_id": os.environ.get("LINKEDIN_CLIENT_ID", ""),
+        "client_secret": os.environ.get("LINKEDIN_CLIENT_SECRET", ""),
+    }).encode()
+    token_request = Request(
+        "https://www.linkedin.com/oauth/v2/accessToken",
+        data=token_body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urlopen(token_request, timeout=20) as response:
+            token_data = json.loads(response.read().decode("utf-8"))
+        access_token = token_data["access_token"]
+        profile_request = Request(
+            "https://api.linkedin.com/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+        )
+        with urlopen(profile_request, timeout=20) as response:
+            profile = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        app.logger.exception("LinkedIn OAuth exchange failed")
+        record_agent_event("social", "linkedin_oauth", "fail", f"LinkedIn OAuth exchange failed with {type(exc).__name__}.")
+        return redirect(url_for("agentforce_page", linkedin="failed") + "#social")
+    now = datetime.now(timezone.utc)
+    expires_at = datetime.fromtimestamp(now.timestamp() + int(token_data.get("expires_in", 0)), timezone.utc).isoformat()
+    with agent_evidence_connection() as connection:
+        connection.execute(
+            """INSERT INTO agent_integrations
+               (provider, access_token, external_id, display_name, scopes, expires_at, connected_at, last_verified_at)
+               VALUES ('linkedin', ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(provider) DO UPDATE SET access_token=excluded.access_token,
+                 external_id=excluded.external_id, display_name=excluded.display_name,
+                 scopes=excluded.scopes, expires_at=excluded.expires_at,
+                 connected_at=excluded.connected_at, last_verified_at=excluded.last_verified_at""",
+            (access_token, profile.get("sub"), profile.get("name"), token_data.get("scope", ""), expires_at, now.isoformat(), now.isoformat()),
+        )
+        connection.commit()
+    record_agent_event("social", "linkedin_oauth", "pass", "LinkedIn OAuth connected and identity verified; publishing requires human approval.")
+    return redirect(url_for("agentforce_page", linkedin="connected") + "#social")
 
 
 @app.get("/8")

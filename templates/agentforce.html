@@ -8,6 +8,7 @@
   <p class="lead">Each character has one clear specialty, an inspectable package, a downloadable ZIP, and standards-based adapters. Connections always require your explicit configuration and the destination system’s permission.</p>
   <div class="agent-buyer-strip"><strong>Built for:</strong><span>small service businesses</span><span>independent operators</span><span>lean sales teams</span><span>agencies</span></div>
   {% if request.args.get("checkout") %}<p class="status-banner status-attention">Stripe checkout requires the corresponding private Render variables. Downloads remain available below.</p>{% endif %}
+  {% if request.args.get("linkedin") == "connected" %}<p class="status-banner status-pass">LinkedIn connected to Echo. Identity checks are automatic; publishing still requires human approval.</p>{% elif request.args.get("linkedin") == "failed" %}<p class="status-banner status-attention">LinkedIn authorization did not complete. No post was sent.</p>{% endif %}
   <div class="agent-architecture"><strong>Polka Base Agent</strong><span>+</span><strong>Selected character</strong><span>&rarr;</span><strong>Your approved tools</strong></div>
   <div class="agent-product-grid">
   {% for slug, product in products.items() %}
