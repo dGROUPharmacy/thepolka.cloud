@@ -11,5 +11,7 @@ build/
 instance/*.db
 instance/*.sqlite
 instance/*.sqlite3
+instance/caretaker.local.json
+instance/caretaker-bridge.log
 *.pem
 *.key

@@ -339,6 +339,15 @@ def agent_evidence_connection():
             error_detail TEXT
         )"""
     )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS caretaker_bridges (
+            bridge_id TEXT PRIMARY KEY,
+            machine_name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            report_json TEXT NOT NULL
+        )"""
+    )
     connection.commit()
     return connection
 
@@ -504,6 +513,24 @@ def ensure_scheduled_social_draft(interval_seconds=86400):
     return True
 
 
+def caretaker_bridge_status(max_age_seconds=600):
+    with agent_evidence_connection() as connection:
+        row = connection.execute(
+            "SELECT bridge_id, machine_name, status, last_seen_at, report_json FROM caretaker_bridges ORDER BY last_seen_at DESC LIMIT 1"
+        ).fetchone()
+    if not row:
+        return None
+    result = dict(row)
+    try:
+        age_seconds = (datetime.now(timezone.utc) - datetime.fromisoformat(result["last_seen_at"])).total_seconds()
+    except ValueError:
+        age_seconds = max_age_seconds + 1
+    result["online"] = age_seconds <= max_age_seconds
+    result["age_seconds"] = max(0, round(age_seconds))
+    result["report"] = json.loads(result.pop("report_json"))
+    return result
+
+
 def perform_agent_automation(slug):
     """Run one bounded, read-only production task and return inspectable evidence."""
     if slug == "base":
@@ -536,8 +563,16 @@ def perform_agent_automation(slug):
                 detail += " The 24-hour draft limit is satisfied."
         return ("pass" if connected else "attention"), detail
     if slug == "housekeeping":
+        bridge = caretaker_bridge_status()
+        if bridge and bridge["online"]:
+            report = bridge["report"]
+            return "pass", (
+                f"Local Caretaker online on {bridge['machine_name']}; "
+                f"{report.get('files', 0)} files and {report.get('databases_checked', 0)} databases checked; "
+                "no destructive cleanup performed."
+            )
         db_files = list(DATA_DIR.glob("*.db"))
-        return "pass", f"Housekeeping audit completed; {len(db_files)} database files healthy; no destructive cleanup performed."
+        return "attention", f"Render audit completed; {len(db_files)} database files healthy; local Caretaker is offline."
     return "attention", "No automation task is configured for this agent."
 
 
@@ -610,6 +645,9 @@ def agent_statuses():
             connected = bool(os.environ.get(f"AGENT_CONNECTIONS_{slug.upper()}", "").strip())
             if slug == "social":
                 connected = linkedin_integration() is not None
+            if slug == "housekeeping":
+                bridge = caretaker_bridge_status()
+                connected = bool(bridge and bridge["online"])
             price_ready = bool(os.environ.get("STRIPE_SECRET_KEY", "").strip())
             events = connection.execute(
                 "SELECT event_type, status, detail, created_at FROM agent_events WHERE agent_slug = ? ORDER BY id DESC LIMIT 8",
@@ -649,6 +687,8 @@ def agent_statuses():
                 "metrics": metrics,
                 "events": [dict(row) for row in events],
             }
+            if slug == "housekeeping":
+                statuses[slug]["local_bridge"] = bridge
     return statuses
 
 
@@ -1216,6 +1256,61 @@ def agent_evidence_api(slug):
     if slug not in agents:
         return jsonify(error="Agent not found"), 404
     return jsonify(slug=slug, **agents[slug])
+
+
+@app.post("/api/agents/housekeeping/check-in")
+def caretaker_check_in_api():
+    secret = os.environ.get("CARETAKER_BRIDGE_SECRET", "").strip()
+    bridge_id = request.headers.get("X-Caretaker-Bridge", "").strip()
+    timestamp = request.headers.get("X-Caretaker-Timestamp", "").strip()
+    signature = request.headers.get("X-Caretaker-Signature", "").strip()
+    body = request.get_data(cache=True)
+    if not secret or not bridge_id or len(bridge_id) > 64 or not bridge_id.replace("-", "").replace("_", "").isalnum():
+        return jsonify(error="Caretaker bridge authorization required."), 403
+    try:
+        request_time = int(timestamp)
+    except ValueError:
+        return jsonify(error="Invalid Caretaker timestamp."), 403
+    if abs(int(time.time()) - request_time) > 300:
+        return jsonify(error="Caretaker check-in expired."), 403
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
+    if not signature or not hmac.compare_digest(expected, signature):
+        return jsonify(error="Invalid Caretaker signature."), 403
+    if len(body) > 131072:
+        return jsonify(error="Caretaker report is too large."), 413
+    payload = request.get_json(silent=True) or {}
+    machine_name = str(payload.get("machine_name", "Windows workstation"))[:120]
+    roots = payload.get("roots") if isinstance(payload.get("roots"), list) else []
+    report = {
+        "roots": [str(item)[:120] for item in roots[:10]],
+        "files": max(0, int(payload.get("files", 0))),
+        "directories": max(0, int(payload.get("directories", 0))),
+        "bytes": max(0, int(payload.get("bytes", 0))),
+        "large_files": max(0, int(payload.get("large_files", 0))),
+        "stale_files": max(0, int(payload.get("stale_files", 0))),
+        "databases_checked": max(0, int(payload.get("databases_checked", 0))),
+        "database_failures": max(0, int(payload.get("database_failures", 0))),
+        "scan_errors": max(0, int(payload.get("scan_errors", 0))),
+        "read_only": True,
+    }
+    status = "pass" if report["database_failures"] == 0 else "attention"
+    now = datetime.now(timezone.utc).isoformat()
+    with agent_evidence_connection() as connection:
+        connection.execute(
+            """INSERT INTO caretaker_bridges (bridge_id, machine_name, status, last_seen_at, report_json)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(bridge_id) DO UPDATE SET machine_name=excluded.machine_name,
+                 status=excluded.status, last_seen_at=excluded.last_seen_at, report_json=excluded.report_json""",
+            (bridge_id, machine_name, status, now, json.dumps(report, separators=(",", ":"))),
+        )
+        connection.commit()
+    record_agent_event(
+        "housekeeping",
+        "local_check_in",
+        status,
+        f"Local Caretaker checked {report['files']} files across {len(report['roots'])} approved roots; read-only mode.",
+    )
+    return jsonify(accepted=True, status=status, checked_at=now, next_check_in_seconds=300)
 
 
 @app.get("/api/agents/social/linkedin-status")
