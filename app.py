@@ -325,10 +325,7 @@ def agent_statuses():
         connection.commit()
         for slug, product in AGENT_PRODUCTS.items():
             connected = bool(os.environ.get(f"AGENT_CONNECTIONS_{slug.upper()}", "").strip())
-            price_ready = bool(
-                os.environ.get("STRIPE_SECRET_KEY", "").strip()
-                and os.environ.get(f"STRIPE_PRICE_{slug.upper()}", "").strip()
-            )
+            price_ready = bool(os.environ.get("STRIPE_SECRET_KEY", "").strip())
             events = connection.execute(
                 "SELECT event_type, status, detail, created_at FROM agent_events WHERE agent_slug = ? ORDER BY id DESC LIMIT 8",
                 (slug,),
@@ -830,14 +827,18 @@ def agent_checkout(slug):
     if slug not in AGENT_PRODUCTS:
         return not_found(None)
     secret = os.environ.get("STRIPE_SECRET_KEY", "")
-    price_id = os.environ.get(f"STRIPE_PRICE_{slug.upper()}", "")
-    if not secret or not price_id:
+    if not secret:
         record_agent_event(slug, "checkout", "attention", "Checkout requested, but private Stripe configuration is incomplete.")
         return redirect(url_for("agentforce_page", checkout="configuration-required") + f"#{slug}")
+    product = AGENT_PRODUCTS[slug]
     body = urlencode({
         "mode": "payment",
-        "line_items[0][price]": price_id,
+        "line_items[0][price_data][currency]": "usd",
+        "line_items[0][price_data][unit_amount]": product["price"] * 100,
+        "line_items[0][price_data][product_data][name]": f"{product['character']} · {product['name']}",
+        "line_items[0][price_data][product_data][description]": product["description"],
         "line_items[0][quantity]": 1,
+        "allow_promotion_codes": "true",
         "success_url": request.url_root.rstrip("/") + url_for("agentforce_page") + f"?purchased={slug}#{slug}",
         "cancel_url": request.url_root.rstrip("/") + url_for("agentforce_page") + f"?cancelled={slug}#{slug}",
         "metadata[agent_slug]": slug,
