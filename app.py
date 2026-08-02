@@ -12,6 +12,7 @@ import hmac
 import time
 from collections import defaultdict, deque
 from urllib.parse import urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1106,6 +1107,14 @@ def agent_evidence_api(slug):
 def linkedin_status_api():
     try:
         connected, detail = linkedin_verify()
+    except HTTPError as exc:
+        app.logger.warning("Live LinkedIn status check failed with HTTP %s", exc.code)
+        return jsonify(
+            connected=False,
+            status="attention",
+            detail="LinkedIn rejected the identity proof request; no post was sent.",
+            provider_http_status=exc.code,
+        ), 502
     except Exception as exc:
         app.logger.warning("Live LinkedIn status check failed: %s", type(exc).__name__)
         return jsonify(connected=False, status="attention", detail="LinkedIn token verification failed; no post was sent."), 502
