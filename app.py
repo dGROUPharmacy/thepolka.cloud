@@ -833,6 +833,7 @@ def agent_checkout(slug):
     product = AGENT_PRODUCTS[slug]
     body = urlencode({
         "mode": "payment",
+        "managed_payments[enabled]": "false",
         "line_items[0][price_data][currency]": "usd",
         "line_items[0][price_data][unit_amount]": product["price"] * 100,
         "line_items[0][price_data][product_data][name]": f"{product['character']} · {product['name']}",
