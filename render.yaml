@@ -26,6 +26,8 @@ services:
         sync: false
       - key: LINKEDIN_REFRESH_TOKEN
         sync: false
+      - key: LINKEDIN_API_VERSION
+        value: "202604"
       - key: ADMIN_TOKEN
         generateValue: true
       - key: FAIRE_YOUTUBE_VIDEO_ID

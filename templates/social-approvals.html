@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block title %}Echo Approval Queue | ThePolka.Cloud{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/agentforce-signal.css') }}">{% endblock %}
+{% block content %}
+<section class="content-page agentforce-page">
+  <p class="eyebrow">Echo · Human-in-the-loop controls</p>
+  <h1>LinkedIn approval queue</h1>
+  <p class="lead">Drafting, approval, and publishing are separate recorded steps. Echo cannot publish a pending draft.</p>
+
+  <section class="agent-operations">
+    <h2>Create a draft</h2>
+    <form method="post" action="{{ url_for('social_approval_create_draft') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <label for="content"><strong>LinkedIn copy</strong></label>
+      <textarea id="content" name="content" rows="7" maxlength="3000" required placeholder="Draft the post Echo should place into review."></textarea>
+      <p><button class="cta-button" type="submit">Add to approval queue</button></p>
+    </form>
+  </section>
+
+  <div class="agent-product-grid">
+  {% for item in queue %}
+    <article class="agent-product">
+      <p><span class="status-pill status-{{ 'pass' if item.status == 'published' else 'attention' }}">{{ item.status }}</span> LinkedIn · Queue #{{ item.id }}</p>
+      <p style="white-space: pre-wrap">{{ item.content }}</p>
+      <p class="small-note">Created {{ item.created_at }}{% if item.published_at %}<br>Published {{ item.published_at }}{% endif %}{% if item.external_post_id %}<br>Post evidence: {{ item.external_post_id }}{% endif %}{% if item.error_detail %}<br>{{ item.error_detail }}{% endif %}</p>
+      {% if item.status in ['pending', 'approved'] %}
+      <div class="agent-actions">
+        {% if item.status == 'pending' %}
+        <form method="post" action="{{ url_for('social_approval_action', item_id=item.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve">
+          <button class="cta-button" type="submit">Approve</button>
+        </form>
+        {% endif %}
+        {% if item.status == 'approved' %}
+        <form method="post" action="{{ url_for('social_approval_action', item_id=item.id) }}" onsubmit="return confirm('Publish this approved post to LinkedIn now?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="publish">
+          <button class="cta-button" type="submit">Publish to LinkedIn</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{{ url_for('social_approval_action', item_id=item.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="reject">
+          <button class="text-link" type="submit">Reject</button>
+        </form>
+      </div>
+      {% endif %}
+    </article>
+  {% else %}
+    <article class="agent-product"><h2>Queue clear</h2><p>No LinkedIn drafts are awaiting review.</p></article>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}

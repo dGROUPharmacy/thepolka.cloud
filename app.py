@@ -14,11 +14,11 @@ from collections import defaultdict, deque
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Flask, Response, jsonify, redirect, render_template, request, send_file, session, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.utils import secure_filename
 
@@ -39,6 +39,10 @@ app.config.update(
     DATA_DIR=str(DATA_DIR),
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{DATA_DIR / 'users.db'}",
     MAX_CONTENT_LENGTH=12 * 1024 * 1024,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    PERMANENT_SESSION_LIFETIME=timedelta(days=30),
 )
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
@@ -321,6 +325,20 @@ def agent_evidence_connection():
             expires_at TEXT NOT NULL
         )"""
     )
+    connection.execute(
+        """CREATE TABLE IF NOT EXISTS social_approval_queue (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            platform TEXT NOT NULL DEFAULT 'linkedin',
+            content TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            approved_at TEXT,
+            published_at TEXT,
+            external_post_id TEXT,
+            error_detail TEXT
+        )"""
+    )
     connection.commit()
     return connection
 
@@ -391,8 +409,69 @@ def linkedin_verify():
                 "UPDATE agent_integrations SET external_id=?, display_name=?, last_verified_at=? WHERE provider='linkedin'",
                 (profile.get("id") or profile.get("sub"), display_name, verified_at),
             )
+        else:
+            connection.execute(
+                """INSERT OR REPLACE INTO agent_integrations
+                   (provider, access_token, external_id, display_name, scopes, expires_at, connected_at, last_verified_at)
+                   VALUES ('linkedin', ?, ?, ?, 'openid profile r_profile_basicinfo w_member_social', NULL, ?, ?)""",
+                (access_token, profile.get("id") or profile.get("sub"), display_name, verified_at, verified_at),
+            )
         connection.commit()
     return True, f"LinkedIn OAuth verified for {display_name}; publishing remains human-approved."
+
+
+def approval_session_authorized():
+    return bool(session.get("social_approvals_admin"))
+
+
+def approval_csrf_token():
+    token = session.get("social_approvals_csrf")
+    if not token:
+        token = secrets.token_urlsafe(24)
+        session["social_approvals_csrf"] = token
+    return token
+
+
+def approval_csrf_valid():
+    expected = session.get("social_approvals_csrf", "")
+    supplied = request.form.get("csrf_token", "")
+    return bool(expected and supplied and hmac.compare_digest(expected, supplied))
+
+
+def linkedin_publish_text(content):
+    with agent_evidence_connection() as connection:
+        integration = connection.execute(
+            "SELECT access_token, external_id FROM agent_integrations WHERE provider='linkedin'"
+        ).fetchone()
+    if not integration or not integration["external_id"]:
+        linkedin_verify()
+        with agent_evidence_connection() as connection:
+            integration = connection.execute(
+                "SELECT access_token, external_id FROM agent_integrations WHERE provider='linkedin'"
+            ).fetchone()
+    if not integration or not integration["external_id"]:
+        raise RuntimeError("LinkedIn identity is not available")
+    payload = json.dumps({
+        "author": f"urn:li:person:{integration['external_id']}",
+        "commentary": content,
+        "visibility": "PUBLIC",
+        "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
+        "lifecycleState": "PUBLISHED",
+        "isReshareDisabledByAuthor": False,
+    }).encode()
+    publish_request = Request(
+        "https://api.linkedin.com/rest/posts",
+        data=payload,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {integration['access_token']}",
+            "Content-Type": "application/json",
+            "LinkedIn-Version": os.environ.get("LINKEDIN_API_VERSION", "202604"),
+            "X-Restli-Protocol-Version": "2.0.0",
+        },
+    )
+    with urlopen(publish_request, timeout=20) as response:
+        return response.headers.get("x-restli-id", "published")
 
 
 def perform_agent_automation(slug):
@@ -1127,6 +1206,108 @@ def linkedin_status_api():
         publishing_policy="human approval required",
         checked_at=datetime.now(timezone.utc).isoformat(),
     )
+
+
+@app.get("/agentforce/approvals/access")
+def social_approval_access():
+    nonce = request.args.get("nonce", "")
+    expires = request.args.get("expires", "")
+    signature = request.args.get("signature", "")
+    try:
+        active = int(time.time()) <= int(expires) <= int(time.time()) + 600
+    except ValueError:
+        active = False
+    expected = hmac.new(
+        os.environ.get("ADMIN_TOKEN", "").encode(),
+        f"social-approvals:{nonce}:{expires}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    if not (nonce and active and signature and hmac.compare_digest(expected, signature)):
+        return Response("Approval access ticket is invalid or expired.", status=403, mimetype="text/plain")
+    session.permanent = True
+    session["social_approvals_admin"] = True
+    approval_csrf_token()
+    return redirect(url_for("social_approval_queue_page"))
+
+
+@app.get("/agentforce/approvals")
+def social_approval_queue_page():
+    if not approval_session_authorized():
+        return Response("Secure approval session required.", status=403, mimetype="text/plain")
+    with agent_evidence_connection() as connection:
+        queue = [dict(row) for row in connection.execute(
+            "SELECT * FROM social_approval_queue ORDER BY id DESC LIMIT 100"
+        ).fetchall()]
+    return render_template("social-approvals.html", active="agentforce", queue=queue, csrf_token=approval_csrf_token())
+
+
+@app.post("/agentforce/approvals/draft")
+def social_approval_create_draft():
+    if not approval_session_authorized() or not approval_csrf_valid():
+        return Response("Approval authorization required.", status=403, mimetype="text/plain")
+    content = request.form.get("content", "").strip()
+    if not content or len(content) > 3000:
+        return Response("Draft must contain 1 to 3,000 characters.", status=400, mimetype="text/plain")
+    now = datetime.now(timezone.utc).isoformat()
+    with agent_evidence_connection() as connection:
+        connection.execute(
+            "INSERT INTO social_approval_queue (platform, content, status, created_at, updated_at) VALUES ('linkedin', ?, 'pending', ?, ?)",
+            (content, now, now),
+        )
+        connection.commit()
+    record_agent_event("social", "draft_created", "pass", "Echo placed a LinkedIn draft in the human approval queue.")
+    return redirect(url_for("social_approval_queue_page"))
+
+
+@app.post("/agentforce/approvals/<int:item_id>/action")
+def social_approval_action(item_id):
+    if not approval_session_authorized() or not approval_csrf_valid():
+        return Response("Approval authorization required.", status=403, mimetype="text/plain")
+    action = request.form.get("action", "")
+    now = datetime.now(timezone.utc).isoformat()
+    with agent_evidence_connection() as connection:
+        item = connection.execute("SELECT * FROM social_approval_queue WHERE id=?", (item_id,)).fetchone()
+        if not item:
+            return Response("Queue item not found.", status=404, mimetype="text/plain")
+        if action == "approve" and item["status"] == "pending":
+            connection.execute(
+                "UPDATE social_approval_queue SET status='approved', approved_at=?, updated_at=? WHERE id=?",
+                (now, now, item_id),
+            )
+            connection.commit()
+            record_agent_event("social", "draft_approved", "pass", "Human approved a LinkedIn draft; it has not been published yet.")
+        elif action == "reject" and item["status"] in {"pending", "approved"}:
+            connection.execute(
+                "UPDATE social_approval_queue SET status='rejected', updated_at=? WHERE id=?", (now, item_id)
+            )
+            connection.commit()
+            record_agent_event("social", "draft_rejected", "pass", "Human rejected a LinkedIn draft; no post was sent.")
+        elif action == "publish" and item["status"] == "approved":
+            connection.execute(
+                "UPDATE social_approval_queue SET status='publishing', updated_at=? WHERE id=?", (now, item_id)
+            )
+            connection.commit()
+            try:
+                post_id = linkedin_publish_text(item["content"])
+            except Exception as exc:
+                app.logger.exception("Human-approved LinkedIn publish failed")
+                connection.execute(
+                    "UPDATE social_approval_queue SET status='failed', error_detail=?, updated_at=? WHERE id=?",
+                    (f"{type(exc).__name__}; inspect production logs", datetime.now(timezone.utc).isoformat(), item_id),
+                )
+                connection.commit()
+                record_agent_event("social", "linkedin_publish", "fail", "An approved LinkedIn post failed to publish; inspect production logs.")
+            else:
+                finished = datetime.now(timezone.utc).isoformat()
+                connection.execute(
+                    "UPDATE social_approval_queue SET status='published', external_post_id=?, published_at=?, updated_at=? WHERE id=?",
+                    (post_id, finished, finished, item_id),
+                )
+                connection.commit()
+                record_agent_event("social", "linkedin_publish", "pass", "Human-approved LinkedIn post published successfully.")
+        else:
+            return Response("Invalid approval transition.", status=409, mimetype="text/plain")
+    return redirect(url_for("social_approval_queue_page"))
 
 
 @app.get("/agentforce/download/<slug>")
