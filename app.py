@@ -934,9 +934,24 @@ def agentforce_page():
     return render_template("agentforce.html", active="agentforce", products=agent_statuses())
 
 
-@app.post("/agentforce/linkedin/connect")
+@app.route("/agentforce/linkedin/connect", methods=["GET", "POST"])
 def linkedin_connect():
-    if not admin_authorized():
+    authorized = admin_authorized()
+    if request.method == "GET":
+        nonce = request.args.get("nonce", "")
+        expires = request.args.get("expires", "")
+        signature = request.args.get("signature", "")
+        try:
+            active = int(expires) >= int(time.time()) and int(expires) <= int(time.time()) + 600
+        except ValueError:
+            active = False
+        expected = hmac.new(
+            os.environ.get("ADMIN_TOKEN", "").encode(),
+            f"linkedin:{nonce}:{expires}".encode(),
+            hashlib.sha256,
+        ).hexdigest()
+        authorized = bool(nonce and active and signature and hmac.compare_digest(expected, signature))
+    if not authorized:
         return jsonify(error="Administrative authorization required."), 403
     client_id = os.environ.get("LINKEDIN_CLIENT_ID", "").strip()
     if not client_id or not os.environ.get("LINKEDIN_CLIENT_SECRET", "").strip():
@@ -958,6 +973,8 @@ def linkedin_connect():
         "state": state,
         "scope": "openid profile w_member_social",
     })
+    if request.method == "GET":
+        return redirect(authorization_url)
     return jsonify(authorization_url=authorization_url, redirect_uri=callback, expires_in=600)
 
 
