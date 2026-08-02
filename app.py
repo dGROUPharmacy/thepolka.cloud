@@ -1093,6 +1093,24 @@ def agent_evidence_api(slug):
     return jsonify(slug=slug, **agents[slug])
 
 
+@app.get("/api/agents/social/linkedin-status")
+def linkedin_status_api():
+    try:
+        connected, detail = linkedin_verify()
+    except Exception as exc:
+        app.logger.warning("Live LinkedIn status check failed: %s", type(exc).__name__)
+        return jsonify(connected=False, status="attention", detail="LinkedIn token verification failed; no post was sent."), 502
+    status = "pass" if connected else "attention"
+    record_agent_event("social", "linkedin_verify", status, detail)
+    return jsonify(
+        connected=connected,
+        status=status,
+        detail=detail,
+        publishing_policy="human approval required",
+        checked_at=datetime.now(timezone.utc).isoformat(),
+    )
+
+
 @app.get("/agentforce/download/<slug>")
 def agent_download(slug):
     if slug not in AGENT_PRODUCTS:
