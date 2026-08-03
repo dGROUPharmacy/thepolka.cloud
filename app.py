@@ -1301,6 +1301,8 @@ def caretaker_check_in_api():
         "disk_free_percent": max(0, min(100, float(payload.get("disk_free_percent", 0)))),
         "cpu_count": max(1, int(payload.get("cpu_count", 1))),
         "defender": payload.get("defender") if isinstance(payload.get("defender"), dict) else {},
+        "move_candidates": max(0, int(payload.get("move_candidates", 0))),
+        "review_manifest_ready": bool(payload.get("review_manifest_ready")),
         "read_only": True,
     }
     defender_ok = bool(report["defender"].get("available") and report["defender"].get("realtime_enabled"))
