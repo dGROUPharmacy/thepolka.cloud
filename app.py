@@ -568,7 +568,8 @@ def perform_agent_automation(slug):
             report = bridge["report"]
             return "pass", (
                 f"Local Caretaker online on {bridge['machine_name']}; "
-                f"{report.get('files', 0)} files and {report.get('databases_checked', 0)} databases checked; "
+                f"{report.get('files', 0)} files, {report.get('duplicate_groups', 0)} duplicate groups, "
+                f"{report.get('database_failures', 0) + report.get('corrupt_archives', 0)} corruption findings; "
                 "no destructive cleanup performed."
             )
         db_files = list(DATA_DIR.glob("*.db"))
@@ -1291,9 +1292,20 @@ def caretaker_check_in_api():
         "databases_checked": max(0, int(payload.get("databases_checked", 0))),
         "database_failures": max(0, int(payload.get("database_failures", 0))),
         "scan_errors": max(0, int(payload.get("scan_errors", 0))),
+        "duplicate_groups": max(0, int(payload.get("duplicate_groups", 0))),
+        "duplicate_files": max(0, int(payload.get("duplicate_files", 0))),
+        "duplicate_reclaimable_bytes": max(0, int(payload.get("duplicate_reclaimable_bytes", 0))),
+        "archives_checked": max(0, int(payload.get("archives_checked", 0))),
+        "corrupt_archives": max(0, int(payload.get("corrupt_archives", 0))),
+        "disk_free_bytes": max(0, int(payload.get("disk_free_bytes", 0))),
+        "disk_free_percent": max(0, min(100, float(payload.get("disk_free_percent", 0)))),
+        "cpu_count": max(1, int(payload.get("cpu_count", 1))),
+        "defender": payload.get("defender") if isinstance(payload.get("defender"), dict) else {},
         "read_only": True,
     }
-    status = "pass" if report["database_failures"] == 0 else "attention"
+    defender_ok = bool(report["defender"].get("available") and report["defender"].get("realtime_enabled"))
+    corruption_found = report["database_failures"] + report["corrupt_archives"]
+    status = "pass" if corruption_found == 0 and defender_ok and report["disk_free_percent"] >= 10 else "attention"
     now = datetime.now(timezone.utc).isoformat()
     with agent_evidence_connection() as connection:
         connection.execute(
@@ -1308,7 +1320,8 @@ def caretaker_check_in_api():
         "housekeeping",
         "local_check_in",
         status,
-        f"Local Caretaker checked {report['files']} files across {len(report['roots'])} approved roots; read-only mode.",
+        f"Local Caretaker checked {report['files']} files; {report['duplicate_groups']} duplicate groups, "
+        f"{corruption_found} corruption findings; Defender real-time {'on' if defender_ok else 'needs attention'}; read-only mode.",
     )
     return jsonify(accepted=True, status=status, checked_at=now, next_check_in_seconds=300)
 
